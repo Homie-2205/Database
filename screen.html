@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webpage Blueprint</title>
+    <style>
+        /* ==========================================================================
+           CSS STYLES
+           ========================================================================== */
+        
+        /* Reset default browser styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        /* 1. Horizontal Navigation */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333;
+            padding: 1rem 2rem;
+        }
+        .navbar .logo {
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+        .nav-links li {
+            margin-left: 1.5rem;
+        }
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover {
+            color: #00adb5;
+        }
+
+        /* 2. Header */
+        .hero-header {
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 4rem 2rem;
+            border-bottom: 1px solid #ddd;
+        }
+        .hero-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #222;
+        }
+
+        /* 3. Main Div Container */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* 4. Photos Section */
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        .photo-gallery img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* 5. Headings & 6. Paragraph Section */
+        .content-text h2 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        .content-text h3 {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        .content-text p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        /* 7. Footer */
+        .site-footer {
+            background-color: #222;
+            color: #fff;
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Horizontal Navigation -->
+    <nav class="navbar">
+        <div class="logo">MyBrand</div>
+        <ul class="nav-links">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">About</a></li>
+            <li><a href="#">Services</a></li>
+            <li><a href="#">Contact</a></li>
+        </ul>
+    </nav>
+
+    <!-- 2. Header -->
+    <header class="hero-header">
+        <h1>Welcome to Our Website</h1>
+        <p>Discover beautiful design and seamless functionality.</p>
+    </header>
+
+    <!-- 3. Main Div Container -->
+    <div class="main-container">
+        
+        <!-- 4. Photos Section -->
+        <section class="photo-gallery">
+            <img src="screen.png">
+            <img src="screen2.png">
+            <img src="screen3.png">
+        </section>
+
+        <!-- 5. Headings and 6. Paragraph Section -->
+        <section class="content-text">
+            <h2>Our Core Mission</h2>
+            <h3>Building a Better Experience</h3>
+            <p>This paragraph contains your main body text. It is designed to be highly readable, clear, and perfectly spaced. By nesting your elements inside a clean layout container, your website will automatically adjust to look great on desktop monitors, tablets, and mobile phones.</p>
+        </section>
+
+    </div>
+
+    <!-- 7. Footer -->
+    <footer class="site-footer">
+        <p>&copy; 2026 MyBrand. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>
