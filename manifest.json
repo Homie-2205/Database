@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "My HTML Project",
+  "version": "1.0",
+  "description": "A good browser extension",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "figkbfghpemcanfkgpedacfdajmpmkpa",
+      "strict_min_version": "109.0"
+    }
+  }
+}
+
