@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wide-Screen Notepad</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; display: flex; height: 100vh; background: #fff; }
+
+        /* Sidebar for Note List */
+        #sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+        }
+
+        .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid #eee; }
+        
+        #add-note-btn {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #notes-list { flex: 1; overflow-y: auto; margin-top: 10px; }
+        
+        .note-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .note-item:hover { background: #e9ecef; }
+        .note-item.active { background: #dee2e6; border-left: 4px solid #007bff; }
+        .delete-icon { color: #dc3545; font-weight: bold; opacity: 0.5; }
+        .delete-icon:hover { opacity: 1; }
+
+        /* Main Writing Area */
+        #editor-container { flex: 1; display: flex; flex-direction: column; padding: 40px; }
+        
+        #note-title {
+            font-size: 32px;
+            font-weight: bold;
+            border: none;
+            outline: none;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        #note-content {
+            flex: 1;
+            font-size: 18px;
+            line-height: 1.6;
+            border: none;
+            outline: none;
+            resize: none;
+            width: 100%;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="sidebar-header">
+        <button id="add-note-btn">+ New Note</button>
+
+    
+     
+     </div>
+     <div><button id="add-note-btn" onclick="openExtensionPopup()" style="cursor: pointer; width: 200px; margin-bottom: 15px; margin-left: 20px;">Calculadora</button></div>
+     
+
+       
+    <div id="notes-list"></div>
+</div>
+
+<div id="editor-container">
+    <input type="text" id="note-title" placeholder="Note Title...">
+    <textarea id="note-content" placeholder="Start writing your thoughts here..."></textarea>
+</div>
+
+<script>
+function openExtensionPopup() {
+    // 80x90 px is usually too small for browsers; 300x400 px is standard for extensions
+    const width = 500; 
+    const height = 700;
+    
+    // Position the window in the top-right corner of the screen
+    const left = window.screen.width - width;
+    const top = 0; 
+    
+    // 'popup=1' removes toolbars, address bar, and status bars in modern browsers
+    const features = `width=${width},height=${height},left=${left},top=${top},popup=1,resizable=no,scrollbars=yes`;
+    
+    window.open('calculadora.html', 'extensionPopup', features);
+}
+</script>
+
+<script>
+    let notes = JSON.parse(localStorage.getItem('saved_notes')) || [];
+    let activeNoteId = null;
+
+    const notesList = document.getElementById('notes-list');
+    const titleInput = document.getElementById('note-title');
+    const contentInput = document.getElementById('note-content');
+    const addBtn = document.getElementById('add-note-btn');
+
+    function renderNotes() {
+        notesList.innerHTML = '';
+        notes.forEach(note => {
+            const div = document.createElement('div');
+            div.className = `note-item ${note.id === activeNoteId ? 'active' : ''}`;
+            div.innerHTML = `<span>${note.title || 'Untitled'}</span><span class="delete-icon" onclick="deleteNote(event, '${note.id}')">×</span>`;
+            div.onclick = () => selectNote(note.id);
+            notesList.appendChild(div);
+        });
+    }
+
+    function selectNote(id) {
+        activeNoteId = id;
+        const note = notes.find(n => n.id === id);
+        titleInput.value = note.title;
+        contentInput.value = note.content;
+        renderNotes();
+    }
+
+    addBtn.addEventListener('click', () => {
+        const newNote = { id: Date.now().toString(), title: '', content: '' };
+        notes.unshift(newNote);
+        saveAndRender();
+        selectNote(newNote.id);
+    });
+
+    [titleInput, contentInput].forEach(input => {
+        input.addEventListener('input', () => {
+            if (!activeNoteId) return;
+            const note = notes.find(n => n.id === activeNoteId);
+            note.title = titleInput.value;
+            note.content = contentInput.value;
+            saveAndRender();
+        });
+    });
+
+    function deleteNote(e, id) {
+        e.stopPropagation();
+        notes = notes.filter(n => n.id !== id);
+        if (activeNoteId === id) {
+            activeNoteId = null;
+            titleInput.value = '';
+            contentInput.value = '';
+        }
+        saveAndRender();
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('saved_notes', JSON.stringify(notes));
+        renderNotes();
+    }
+
+    // Initialize
+    if (notes.length > 0) selectNote(notes[0].id);
+    renderNotes();
+</script>
+
+</body>
+</html>
+
