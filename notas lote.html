@@ -6,7 +6,17 @@
     <title>Wide-Screen Notepad</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; display: flex; height: 100vh; background: #fff; }
+        body { 
+    font-family: 'Inter', sans-serif; 
+    display: flex; 
+    height: 100vh; 
+    background: #fff; 
+    /* Force horizontal scroll capabilities */
+    overflow-x: auto; 
+    overflow-y: hidden;
+    /* Set minimum width so it doesn't squish on mobile Android */
+    min-width: 800px; 
+}
 
         /* Sidebar for Note List */
         #sidebar {
