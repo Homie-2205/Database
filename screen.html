@@ -131,17 +131,37 @@
         
         <!-- 4. Photos Section -->
         <section class="photo-gallery">
-            <a href="target.html" onclick="window.open('page.html', 'newWindow', 'width=200,height=250'); return false;">
-                <img src="screen.png" alt="Click to open window" width="200">> 
- 
-</a>
-             <a href="target.html" target="_blank" onclick="window.open('page.html', 'newWindow', 'width=200,height=250'); return false;">
-                    <img src="screen2.png" alt="Click to open window" width="200">>
-            </a>
+            <img src="your-image.jpg" alt="Open Extension" width="200" style="cursor: pointer;" 
+     onclick="openExtensionPopup()">
+            
+            <img src="screen2" alt="Open Extension" width="200" style="cursor: pointer;" 
+     onclick="openExtensionPopup()">
              
          
             <img src="screen3.png">
+            
         </section>
+
+        <img src="your-image.jpg" alt="Open Extension" width="200" style="cursor: pointer;" 
+     onclick="openExtensionPopup()">
+
+<script>
+function openExtensionPopup() {
+    // 80x90 px is usually too small for browsers; 300x400 px is standard for extensions
+    const width = 300; 
+    const height = 400;
+    
+    // Position the window in the top-right corner of the screen
+    const left = window.screen.width - width;
+    const top = 0; 
+    
+    // 'popup=1' removes toolbars, address bar, and status bars in modern browsers
+    const features = `width=${width},height=${height},left=${left},top=${top},popup=1,resizable=no,scrollbars=yes`;
+    
+    window.open('page.html', 'extensionPopup', features);
+}
+</script>
+
 
 <script>
 
