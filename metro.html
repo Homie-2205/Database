@@ -1,77 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>12 Meter AR Ruler</title>
-
-<style>
-body{
-    margin:0;
-    font-family:Arial,sans-serif;
-    background:#111;
-    color:white;
-    text-align:center;
-}
-
-h2{
-    margin-top:20px;
-}
-
-button{
-    padding:15px 30px;
-    font-size:18px;
-    border:none;
-    border-radius:10px;
-    background:#00b894;
-    color:white;
-    margin:20px;
-}
-
-#status{
-    font-size:18px;
-    margin-top:20px;
-}
-</style>
-</head>
-
+<html>
 <body>
+<h2>WebXR Support Test</h2>
 
-<h2>12 Meter Camera Ruler</h2>
-
-<button id="start">Start Camera</button>
-
-<div id="status">
-Press Start
-</div>
+<p id="result">Checking...</p>
 
 <script>
-const status=document.getElementById("status");
+async function checkXR() {
+    if (!navigator.xr) {
+        document.getElementById("result").innerHTML =
+            "❌ WebXR is NOT supported.";
+        return;
+    }
 
-document.getElementById("start").onclick=async()=>{
+    const supported = await navigator.xr.isSessionSupported("immersive-ar");
 
-if(!navigator.xr){
-status.innerHTML="WebXR is not supported on this phone.";
-return;
+    document.getElementById("result").innerHTML =
+        supported
+        ? "✅ WebXR AR is supported!"
+        : "❌ WebXR exists, but AR is not supported.";
 }
 
-const supported=await navigator.xr.isSessionSupported("immersive-ar");
-
-if(!supported){
-status.innerHTML="AR is not supported on this device.";
-return;
-}
-
-status.innerHTML="Starting AR...";
-
-const session=await navigator.xr.requestSession("immersive-ar",{
-requiredFeatures:["hit-test"]
-});
-
-status.innerHTML=
-"AR Session Started.<br><br>Place one point, then move until the distance reaches <b>12.00 meters</b>.";
-
-};
+checkXR();
 </script>
 
 </body>
