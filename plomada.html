@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+
+<title>AR Wall Inspector</title>
+
+<style>
+html,body{
+margin:0;
+overflow:hidden;
+background:#000;
+font-family:Arial,sans-serif;
+height:100%;
+}
+
+video{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+#crosshair{
+position:absolute;
+left:50%;
+top:50%;
+width:50px;
+height:50px;
+transform:translate(-50%,-50%);
+pointer-events:none;
+}
+
+#crosshair:before,
+#crosshair:after{
+content:'';
+position:absolute;
+background:#00ff00;
+}
+
+#crosshair:before{
+width:2px;
+height:50px;
+left:24px;
+}
+
+#crosshair:after{
+height:2px;
+width:50px;
+top:24px;
+}
+
+#panel{
+position:absolute;
+top:15px;
+left:15px;
+background:rgba(0,0,0,.6);
+color:white;
+padding:15px;
+border-radius:15px;
+width:260px;
+backdrop-filter:blur(10px);
+}
+
+#status{
+margin-top:10px;
+font-size:22px;
+font-weight:bold;
+color:#00ff00;
+}
+
+#bubbleBox{
+margin-top:15px;
+width:180px;
+height:180px;
+border:3px solid #00ff00;
+border-radius:50%;
+position:relative;
+overflow:hidden;
+}
+
+#bubble{
+position:absolute;
+width:28px;
+height:28px;
+border-radius:50%;
+background:lime;
+left:76px;
+top:76px;
+transition:.05s;
+box-shadow:0 0 20px lime;
+}
+
+button{
+margin-top:15px;
+width:100%;
+padding:12px;
+font-size:18px;
+border:none;
+border-radius:10px;
+background:#00ff88;
+font-weight:bold;
+}
+
+.info{
+margin-top:8px;
+}
+</style>
+</head>
+
+<body>
+
+<video autoplay playsinline muted id="camera"></video>
+
+<div id="crosshair"></div>
+
+<div id="panel">
+
+<h2>AR Wall Inspector</h2>
+
+<div class="info">Pitch:
+<span id="pitch">0</span>°</div>
+
+<div class="info">Roll:
+<span id="roll">0</span>°</div>
+
+<div id="status">Analyzing...</div>
+
+<div id="bubbleBox">
+<div id="bubble"></div>
+</div>
+
+<button onclick="startCamera()">
+Start Camera
+</button>
+
+</div>
+
+<script>
+
+async function startCamera(){
+
+try{
+
+const stream=await navigator.mediaDevices.getUserMedia({
+video:{
+facingMode:"environment"
+}
+});
+
+camera.srcObject=stream;
+
+}catch(e){
+alert("Camera unavailable");
+}
+
+}
+
+const bubble=document.getElementById("bubble");
+
+window.addEventListener("deviceorientation",event=>{
+
+let pitch=event.beta||0;
+let roll=event.gamma||0;
+
+document.getElementById("pitch").innerHTML=pitch.toFixed(1);
+document.getElementById("roll").innerHTML=roll.toFixed(1);
+
+let x=Math.max(-60,Math.min(60,roll));
+let y=Math.max(-60,Math.min(60,pitch));
+
+bubble.style.left=(76+x)+"px";
+bubble.style.top=(76+y)+"px";
+
+let error=Math.abs(pitch)+Math.abs(roll);
+
+const status=document.getElementById("status");
+
+if(error<8){
+
+status.innerHTML="✔ Wall appears parallel";
+status.style.color="#00ff00";
+
+}else if(error<20){
+
+status.innerHTML="⚠ Slight Angle";
+status.style.color="yellow";
+
+}else{
+
+status.innerHTML="✖ Not Parallel";
+status.style.color="red";
+
+}
+
+});
+
+startCamera();
+
+</script>
+
+</body>
+</html>
