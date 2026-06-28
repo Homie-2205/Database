@@ -113,10 +113,11 @@ renderer.setAnimationLoop(render);
 
 function onSelect(){
 
-const p=new THREE.Vector3();
 
+const p = new THREE.Vector3();
 controller.getWorldPosition(p);
 
+points.push(p.clone());
 
 const sphere = new THREE.Mesh(
     new THREE.SphereGeometry(0.0025, 16, 16), // 12× smaller
