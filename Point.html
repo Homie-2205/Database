@@ -2,57 +2,163 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mark Points</title>
+<meta name="viewport"
+content="width=device-width,initial-scale=1.0">
+
+<title>AR Wall Inspector</title>
+
 <style>
-html, body {
-    margin: 0;
-    overflow: hidden;
+
+html,body{
+margin:0;
+padding:0;
+overflow:hidden;
+background:#000;
+font-family:Arial,sans-serif;
 }
 
-#camera {
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
+canvas{
+display:block;
 }
 
-.point {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    background: red;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    border: 2px solid white;
+#ui{
+position:absolute;
+top:15px;
+left:15px;
+right:15px;
+z-index:100;
 }
+
+#panel{
+background:rgba(20,20,20,.75);
+padding:15px;
+border-radius:16px;
+color:white;
+backdrop-filter:blur(10px);
+}
+
+button{
+
+width:100%;
+padding:14px;
+margin-top:10px;
+font-size:18px;
+border:none;
+border-radius:12px;
+background:#00c853;
+color:white;
+font-weight:bold;
+}
+
+button:hover{
+background:#00e676;
+}
+
+#status{
+margin-top:12px;
+font-size:16px;
+}
+
 </style>
+
 </head>
+
 <body>
 
-<video id="camera" autoplay playsinline></video>
+<div id="ui">
 
-<script>
-const video = document.getElementById("camera");
+<div id="panel">
 
-// Start camera
-navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "environment" }
-})
-.then(stream => {
-    video.srcObject = stream;
-})
-.catch(err => {
-    alert("Camera error: " + err);
+<h2>AR Wall Inspector</h2>
+
+<div id="status">
+Ready
+</div>
+
+<button id="startAR">
+Start AR
+</button>
+
+</div>
+
+</div>
+
+<script type="module">
+
+import * as THREE from
+'https://unpkg.com/three@0.160.0/build/three.module.js';
+
+let scene;
+let camera;
+let renderer;
+
+scene=new THREE.Scene();
+
+camera=new THREE.PerspectiveCamera(
+70,
+window.innerWidth/window.innerHeight,
+0.01,
+100
+);
+
+renderer=new THREE.WebGLRenderer({
+alpha:true,
+antialias:true
 });
 
-// Mark point on tap
-document.addEventListener("click", function(e) {
-    const point = document.createElement("div");
-    point.className = "point";
-    point.style.left = e.clientX + "px";
-    point.style.top = e.clientY + "px";
-    document.body.appendChild(point);
-});
+renderer.setSize(
+window.innerWidth,
+window.innerHeight
+);
+
+renderer.xr.enabled=true;
+
+document.body.appendChild(renderer.domElement);
+
+document
+.getElementById("startAR")
+.addEventListener("click",startAR);
+
+async function startAR(){
+
+if(!navigator.xr){
+
+status.innerHTML="WebXR Not Supported";
+return;
+
+}
+
+const session=
+await navigator.xr.requestSession(
+"immersive-ar",
+{
+requiredFeatures:[
+"hit-test"
+],
+optionalFeatures:[
+"dom-overlay"
+],
+domOverlay:{
+root:document.body
+}
+}
+);
+
+renderer.xr.setSession(session);
+
+status.innerHTML=
+"Move the phone toward a wall...";
+
+renderer.setAnimationLoop(render);
+
+}
+
+function render(){
+
+renderer.render(scene,camera);
+
+}
+
 </script>
 
 </body>
