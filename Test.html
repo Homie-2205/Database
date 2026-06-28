@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>5 Meter AR Ruler</title>
+
+<style>
+html,body{
+margin:0;
+overflow:hidden;
+background:#000;
+font-family:Arial;
+}
+
+#start{
+position:absolute;
+top:20px;
+left:20px;
+padding:15px 25px;
+font-size:18px;
+z-index:10;
+}
+
+#info{
+position:absolute;
+bottom:20px;
+left:20px;
+right:20px;
+color:white;
+background:rgba(0,0,0,.6);
+padding:12px;
+border-radius:10px;
+z-index:10;
+}
+</style>
+</head>
+<body>
+
+<button id="start">Start AR</button>
+
+<div id="info">
+Target Length: <b>5.00 meters</b><br>
+Tap two points in AR to measure.
+</div>
+
+<script type="module">
+
+const button=document.getElementById("start");
+
+button.onclick=async()=>{
+
+if(!navigator.xr){
+alert("WebXR is not supported on this device.");
+return;
+}
+
+const supported=await navigator.xr.isSessionSupported("immersive-ar");
+
+if(!supported){
+alert("AR is not supported on this phone.");
+return;
+}
+
+const session=await navigator.xr.requestSession("immersive-ar",{
+requiredFeatures:["hit-test"]
+});
+
+alert("AR session started.\nYou can extend this with hit-testing to measure up to 5 meters.");
+
+};
+
+</script>
+
+</body>
+</html>
