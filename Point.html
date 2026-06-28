@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mark Points</title>
+<style>
+html, body {
+    margin: 0;
+    overflow: hidden;
+}
+
+#camera {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+}
+
+.point {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: red;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    border: 2px solid white;
+}
+</style>
+</head>
+<body>
+
+<video id="camera" autoplay playsinline></video>
+
+<script>
+const video = document.getElementById("camera");
+
+// Start camera
+navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" }
+})
+.then(stream => {
+    video.srcObject = stream;
+})
+.catch(err => {
+    alert("Camera error: " + err);
+});
+
+// Mark point on tap
+document.addEventListener("click", function(e) {
+    const point = document.createElement("div");
+    point.className = "point";
+    point.style.left = e.clientX + "px";
+    point.style.top = e.clientY + "px";
+    document.body.appendChild(point);
+});
+</script>
+
+</body>
+</html>
