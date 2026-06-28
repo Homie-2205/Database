@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10 Meter AR Ruler</title>
+
+<style>
+html, body{
+    margin:0;
+    overflow:hidden;
+    font-family:Arial,sans-serif;
+    background:#000;
+}
+
+#overlay{
+    position:absolute;
+    top:10px;
+    left:10px;
+    z-index:10;
+    color:white;
+    background:rgba(0,0,0,.6);
+    padding:10px;
+    border-radius:10px;
+}
+
+button{
+    padding:10px 18px;
+    font-size:16px;
+    margin-top:10px;
+    cursor:pointer;
+}
+
+#distance{
+    margin-top:10px;
+    font-size:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="overlay">
+<h2>10 Meter WebXR Ruler</h2>
+<p>Tap two points in AR.</p>
+<div id="distance">Distance: 0.00 m</div>
+<button id="startAR">Start AR</button>
+</div>
+
+<script type="module">
+
+import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+import { ARButton } from "https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js";
+
+let camera, scene, renderer;
+let controller;
+let points=[];
+
+init();
+
+async function init(){
+
+if(!navigator.xr){
+alert("WebXR is not supported.");
+return;
+}
+
+const supported = await navigator.xr.isSessionSupported("immersive-ar");
+
+if(!supported){
+alert("Immersive AR is not supported on this device.");
+return;
+}
+
+scene=new THREE.Scene();
+
+camera=new THREE.PerspectiveCamera(
+70,
+window.innerWidth/window.innerHeight,
+0.01,
+20
+);
+
+renderer=new THREE.WebGLRenderer({
+antialias:true,
+alpha:true
+});
+
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.xr.enabled=true;
+
+document.body.appendChild(renderer.domElement);
+
+controller=renderer.xr.getController(0);
+
+controller.addEventListener("select",onSelect);
+
+scene.add(controller);
+
+document.getElementById("startAR").onclick=()=>{
+
+document.body.appendChild(
+ARButton.createButton(renderer,{
+requiredFeatures:["hit-test"]
+})
+);
+
+};
+
+renderer.setAnimationLoop(render);
+
+}
+
+function onSelect(){
+
+const p=new THREE.Vector3();
+
+controller.getWorldPosition(p);
+
+points.push(p);
+
+const sphere=new THREE.Mesh(
+new THREE.SphereGeometry(0.03),
+new THREE.MeshBasicMaterial({color:0xff0000})
+);
+
+sphere.position.copy(p);
+
+scene.add(sphere);
+
+if(points.length==2){
+
+const d=points[0].distanceTo(points[1]);
+
+document.getElementById("distance").innerHTML=
+"Distance: "+d.toFixed(2)+" m";
+
+const geometry=new THREE.BufferGeometry().setFromPoints(points);
+
+const line=new THREE.Line(
+geometry,
+new THREE.LineBasicMaterial({color:0x00ff00})
+);
+
+scene.add(line);
+
+points=[];
+
+}
+
+}
+
+function render(){
+
+renderer.render(scene,camera);
+
+}
+
+</script>
+
+</body>
+</html>
