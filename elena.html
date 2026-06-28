@@ -117,11 +117,12 @@ const p=new THREE.Vector3();
 
 controller.getWorldPosition(p);
 
-points.push(p);
 
-const sphere=new THREE.Mesh(
-new THREE.SphereGeometry(0.03),
-new THREE.MeshBasicMaterial({color:0xff0000})
+const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.0025, 16, 16), // 12× smaller
+    new THREE.MeshBasicMaterial({
+        color: 0x00ff00 // Green
+    })
 );
 
 sphere.position.copy(p);
