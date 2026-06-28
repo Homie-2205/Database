@@ -3,93 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>15 Meter Camera</title>
+<title>12 Meter AR Ruler</title>
 
 <style>
 body{
-    font-family:Arial, sans-serif;
-    background:#f5f5f5;
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#111;
+    color:white;
     text-align:center;
-    margin:20px;
 }
 
 h2{
-    color:#333;
+    margin-top:20px;
 }
 
-video{
-    width:95%;
-    max-width:500px;
-    border:3px solid #333;
+button{
+    padding:15px 30px;
+    font-size:18px;
+    border:none;
     border-radius:10px;
+    background:#00b894;
+    color:white;
+    margin:20px;
 }
 
-.meter{
-    width:300px;
-    height:30px;
-    border:2px solid #333;
-    border-radius:15px;
-    margin:20px auto;
-    overflow:hidden;
-    background:#ddd;
-}
-
-.fill{
-    width:0%;
-    height:100%;
-    background:limegreen;
-    transition:0.2s;
-}
-
-p{
-    font-size:20px;
-    font-weight:bold;
-}
-
-input[type=range]{
-    width:300px;
+#status{
+    font-size:18px;
+    margin-top:20px;
 }
 </style>
-
 </head>
+
 <body>
 
-<h2>15 Meter Camera</h2>
+<h2>12 Meter Camera Ruler</h2>
 
-<video id="camera" autoplay playsinline></video>
+<button id="start">Start Camera</button>
 
-<div class="meter">
-    <div class="fill" id="fill"></div>
+<div id="status">
+Press Start
 </div>
 
-<p><span id="value">0</span> / 15 meters</p>
-
-<input type="range" id="slider" min="0" max="15" step="0.1" value="0">
-
 <script>
-const video = document.getElementById("camera");
+const status=document.getElementById("status");
 
-navigator.mediaDevices.getUserMedia({
-    video:{
-        facingMode:"environment"
-    }
-})
-.then(stream=>{
-    video.srcObject=stream;
-})
-.catch(error=>{
-    alert("Unable to access the camera.");
-    console.error(error);
+document.getElementById("start").onclick=async()=>{
+
+if(!navigator.xr){
+status.innerHTML="WebXR is not supported on this phone.";
+return;
+}
+
+const supported=await navigator.xr.isSessionSupported("immersive-ar");
+
+if(!supported){
+status.innerHTML="AR is not supported on this device.";
+return;
+}
+
+status.innerHTML="Starting AR...";
+
+const session=await navigator.xr.requestSession("immersive-ar",{
+requiredFeatures:["hit-test"]
 });
 
-const slider = document.getElementById("slider");
-const fill = document.getElementById("fill");
-const value = document.getElementById("value");
+status.innerHTML=
+"AR Session Started.<br><br>Place one point, then move until the distance reaches <b>12.00 meters</b>.";
 
-slider.addEventListener("input", function(){
-    value.textContent = this.value;
-    fill.style.width = (this.value / 15 * 100) + "%";
-});
+};
 </script>
 
 </body>
