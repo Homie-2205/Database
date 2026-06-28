@@ -41,7 +41,7 @@ button{
 <body>
 
 <div id="overlay">
-<h2>10 Meter WebXR Ruler</h2>
+<h2>10 Meter WebXR Ruler Santa Elena</h2>
 <p>Tap two points in AR.</p>
 <div id="distance">Distance: 0.00 m</div>
 <button id="startAR">Start AR</button>
