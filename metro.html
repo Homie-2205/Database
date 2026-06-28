@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Medidor de Metros</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    text-align:center;
+    margin-top:50px;
+    background:#f2f2f2;
+}
+
+.medidor{
+    width:220px;
+    margin:auto;
+    padding:20px;
+    background:white;
+    border:2px solid #333;
+    border-radius:10px;
+}
+
+#metros{
+    font-size:40px;
+    font-weight:bold;
+    color:#0066cc;
+}
+
+button{
+    padding:10px 20px;
+    margin:10px;
+    font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="medidor">
+    <h2>Medidor</h2>
+    <div id="metros">0 m</div>
+
+    <button onclick="sumar()">+1 m</button>
+    <button onclick="restar()">-1 m</button>
+</div>
+
+<script>
+let metros = 0;
+
+function sumar(){
+    metros++;
+    document.getElementById("metros").innerHTML = metros + " m";
+}
+
+function restar(){
+    if(metros > 0){
+        metros--;
+    }
+    document.getElementById("metros").innerHTML = metros + " m";
+}
+</script>
+
+</body>
+</html>
