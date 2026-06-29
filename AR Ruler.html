@@ -1,121 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Web AR Ruler</title>
-    <!-- Include A-Frame and AR.js -->
-    <script src="https://aframe.io"></script>
-    <script src="https://githack.com"></script>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body style="margin: 0px; overflow: hidden;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Access Test</title>
+    <style>
+        /* CSS Styles */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #ffffff;
+        }
 
-    <!-- Information HUD -->
-    <div id="ui-container">
-        <h1>AR Ruler</h1>
-        <p>Point your camera at two markers to measure distance.</p>
-        <div id="measurement-box">
-            Distance: <span id="distance-output">--</span> meters
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 640px;
+            padding: 20px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #1e1e1e;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            aspect-ratio: 4 / 3;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirrors the camera for a natural feel */
+        }
+
+        .status-message {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: #bb86fc;
+        }
+
+        .error-message {
+            color: #cf6679;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Camera Feed</h2>
+        <div class="video-wrapper">
+            <video id="webcam" autoplay playsinline></video>
         </div>
+        <div id="status" class="status-message">Initializing camera...</div>
     </div>
 
-    <!-- AR Scene -->
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        
-        <!-- Marker 1 (Hiro default) -->
-        <a-marker preset="hiro" id="marker-1">
-            <a-sphere color="#EF2D5E" radius="0.1"></a-sphere>
-            
-        </a-marker>
+    <script>
+        // JavaScript Logic
+        const video = document.getElementById('webcam');
+        const statusDiv = document.getElementById('status');
 
-        <!-- Marker 2 (Kanji default) -->
-        <a-marker preset="kanji" id="marker-2">
-            <a-sphere color="#4CC3D9" radius="0.1"></a-sphere>
-            
-        </a-marker>
-
-        <!-- Static Camera -->
-        <style>
-
-* {
-    box-sizing: border-box;
-}
-
-#ui-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    font-family: Arial, sans-serif;
-    z-index: 1000;
-    text-align: center;
-    pointer-events: none; /* Allows tapping through UI to the camera */
-}
-
-#ui-container h1 {
-    margin: 0 0 5px 0;
-    font-size: 1.5rem;
-}
-
-#ui-container p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #ddd;
-}
-
-#measurement-box {
-    margin-top: 15px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #4CC3D9;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 10px;
-    border-radius: 5px;
-    display: inline-block;
-}
-
-</style>
-        
-    </a-scene>
-
-    <!-- Load Custom Logic -->
-    <script src="app.js"></script>
-<script>   document.addEventListener('DOMContentLoaded', () => {
-    const marker1 = document.querySelector('#marker-1');
-    const marker2 = document.querySelector('#marker-2');
-    const distanceOutput = document.querySelector('#distance-output');
-
-    let position1 = new THREE.Vector3();
-    let position2 = new THREE.Vector3();
-
-    function updateDistance() {
-        // Check if both markers are currently visible in the camera frame
-        if (marker1 && marker2 && marker1.object3D.visible && marker2.object3D.visible) {
-            
-            // Get world positions of the markers
-            marker1.object3D.getWorldPosition(position1);
-            marker2.object3D.getWorldPosition(position2);
-
-            // Calculate Euclidean distance between the two points
-            const distance = position1.distanceTo(position2);
-
-            // Update the UI with the measured distance (converted to cm if under 1m)
-            if (distance < 1.0) {
-                distanceOutput.textContent = `${(distance * 100).toFixed(1)} cm`;
-            } else {
-                distanceOutput.textContent = `${distance.toFixed(2)} m`;
+        async function initCamera() {
+            try {
+                // Request both video and audio permissions if needed, or just video
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: "user", // Use "environment" for the back camera on phones
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }, 
+                    audio: false 
+                });
+                
+                // Assign the stream to the video element
+                video.srcObject = stream;
+                statusDiv.textContent = "Camera connected successfully.";
+                
+            } catch (error) {
+                console.error("Error accessing the camera: ", error);
+                statusDiv.classList.add('error-message');
+                
+                if (error.name === 'NotAllowedError') {
+                    statusDiv.textContent = "Permission denied. Please grant camera access in your browser settings.";
+                } else if (error.name === 'NotFoundError') {
+                    statusDiv.textContent = "No camera device found on this system.";
+                } else {
+                    statusDiv.textContent = `Error: ${error.message}. (Note: Camera APIs require HTTPS or localhost).`;
+                }
             }
-        } else {
-            distanceOutput.textContent = 'Waiting for both markers...';
         }
-    }
 
-    // Run distance calculation continuously in the render loop
-    setInterval(updateDistance, 100);
-});
-</script>
+        // Run the function when the page loads
+        window.addEventListener('DOMContentLoaded', initCamera);
+    </script>
 </body>
 </html>
