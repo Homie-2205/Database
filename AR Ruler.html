@@ -1,107 +1,271 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera Access Test</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Enterprise Web AR Ruler Pro</title>
+    
+    <!-- Core External Frameworks via Secure CDN -->
+    <script src="https://aframe.io"></script>
+    <script src="https://githack.com"></script>
+
     <style>
-        /* CSS Styles */
-        body {
+        /* Modern UI/UX Overlay Styles */
+        :root {
+            --primary-color: #00f3ff;
+            --accent-color: #ff0055;
+            --bg-glass: rgba(10, 15, 30, 0.75);
+            --border-glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body, html {
             margin: 0;
             padding: 0;
-            background-color: #121212;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            color: #ffffff;
-        }
-
-        .container {
-            text-align: center;
-            width: 100%;
-            max-width: 640px;
-            padding: 20px;
-        }
-
-        .video-wrapper {
-            position: relative;
-            width: 100%;
-            border-radius: 12px;
-            overflow: hidden;
-            background-color: #1e1e1e;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-            aspect-ratio: 4 / 3;
-        }
-
-        video {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1); /* Mirrors the camera for a natural feel */
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        .status-message {
-            margin-top: 15px;
-            font-size: 1rem;
-            color: #bb86fc;
+        /* Top HUD Dashboard */
+        #hud-container {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 450px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 15px 20px;
+            color: #ffffff;
+            z-index: 9999;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            text-align: center;
+            pointer-events: auto;
         }
 
-        .error-message {
-            color: #cf6679;
-            font-weight: bold;
+        #hud-container h1 {
+            margin: 0 0 4px 0;
+            font-size: 1.25rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--primary-color);
+        }
+
+        #hud-container p {
+            margin: 0 0 12px 0;
+            font-size: 0.8rem;
+            color: #b0b5c0;
+        }
+
+        /* Live Tracker Metrics Panel */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .status-badge {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.active {
+            border-color: var(--primary-color);
+            background: rgba(0, 243, 255, 0.1);
+            color: var(--primary-color);
+        }
+
+        .status-badge.missing {
+            border-color: var(--accent-color);
+            background: rgba(255, 0, 85, 0.1);
+            color: var(--accent-color);
+        }
+
+        #measurement-display {
+            font-size: 1.8rem;
+            font-weight: 800;
+            font-family: monospace;
+            color: #ffffff;
+            text-shadow: 0 0 10px var(--primary-color);
+            padding: 8px 0;
+            border-top: 1px solid var(--border-glass);
+        }
+
+        /* Error Handler Screen */
+        #error-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0d0f14;
+            color: #ffffff;
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 30px;
+            text-align: center;
+        }
+
+        #error-screen h2 {
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        /* Hide Default Framework Overlays */
+        .a-enter-vr, .a-enter-ar {
+            display: none !important;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Camera Feed</h2>
-        <div class="video-wrapper">
-            <video id="webcam" autoplay playsinline></video>
-        </div>
-        <div id="status" class="status-message">Initializing camera...</div>
+    <!-- Error Fallback Screen -->
+    <div id="error-screen">
+        <h2>Security Requirement</h2>
+        <p id="error-message">Camera access failed. WebXR and AR.js require an HTTPS connection or localhost environment to run properly.</p>
     </div>
 
-    <script>
-        // JavaScript Logic
-        const video = document.getElementById('webcam');
-        const statusDiv = document.getElementById('status');
+    <!-- UI Overlay Dashboard -->
+    <div id="hud-container">
+        <h1>AR Ruler Engine</h1>
+        <p>Align both markers within the viewport camera grid</p>
+        
+        <div class="metrics-grid">
+            <div id="badge-m1" class="status-badge missing">Point A (Hiro): LOST</div>
+            <div id="badge-m2" class="status-badge missing">Point B (Kanji): LOST</div>
+        </div>
 
-        async function initCamera() {
-            try {
-                // Request both video and audio permissions if needed, or just video
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: "user", // Use "environment" for the back camera on phones
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }, 
-                    audio: false 
-                });
-                
-                // Assign the stream to the video element
-                video.srcObject = stream;
-                statusDiv.textContent = "Camera connected successfully.";
-                
-            } catch (error) {
-                console.error("Error accessing the camera: ", error);
-                statusDiv.classList.add('error-message');
-                
-                if (error.name === 'NotAllowedError') {
-                    statusDiv.textContent = "Permission denied. Please grant camera access in your browser settings.";
-                } else if (error.name === 'NotFoundError') {
-                    statusDiv.textContent = "No camera device found on this system.";
+        <div id="measurement-display">SYSTEM INIT...</div>
+    </div>
+
+    <!-- Web AR Viewport Execution Environment -->
+    <a-scene 
+        embedded 
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+        renderer="logarithmicDepthBuffer: true; colorManagement: true;">
+        
+        <!-- Physical Space Anchor Alpha (Hiro Standard) -->
+        <a-marker preset="hiro" id="marker-alpha">
+            <!-- Central Node point -->
+            <a-sphere position="0 0 0" radius="0.04" color="#00f3ff" material="emissive: #00f3ff; emissiveIntensity: 0.5"></a-sphere>
+            <a-ring position="0 0 0" radius-inner="0.06" radius-outer="0.08" rotation="-90 0 0" color="#00f3ff"></a-ring>
+        </a-marker>
+
+        <!-- Physical Space Anchor Beta (Kanji Standard) -->
+        <a-marker preset="kanji" id="marker-beta">
+            <!-- Central Node point -->
+            <a-sphere position="0 0 0" radius="0.04" color="#ff0055" material="emissive: #ff0055; emissiveIntensity: 0.5"></a-sphere>
+            <a-ring position="0 0 0" radius-inner="0.06" radius-outer="0.08" rotation="-90 0 0" color="#ff0055"></a-ring>
+        </a-marker>
+
+        <!-- Dynamic Vector Overlay System -->
+        
+
+        <!-- Static Real-World Perspective Camera Module -->
+        
+        
+    </a-scene>
+
+    <script>
+        // Production Script Implementation
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Environment Verification Check
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const isHttps = window.location.protocol === 'https:';
+            
+            if (!isHttps && !isLocalhost) {
+                document.getElementById('error-screen').style.display = 'flex';
+                document.getElementById('hud-container').style.display = 'none';
+                return;
+            }
+
+            // DOM Object References
+            const m1 = document.querySelector('#marker-alpha');
+            const m2 = document.querySelector('#marker-beta');
+            const badge1 = document.querySelector('#badge-m1');
+            const badge2 = document.querySelector('#badge-m2');
+            const display = document.querySelector('#measurement-display');
+            const lineContainer = document.querySelector('#vector-line-container');
+
+            // Global Optimization Vectors (Avoids Garbage Collection spikes inside loop)
+            const v1 = new THREE.Vector3();
+            const v2 = new THREE.Vector3();
+            let currentLineObj = null;
+
+            /**
+             * Primary Spatial Analytical Execution Loop
+             */
+            function spatialCalculationEngine() {
+                const stateM1 = m1 && m1.object3D && m1.object3D.visible;
+                const stateM2 = m2 && m2.object3D && m2.object3D.visible;
+
+                // Update Telemetry Status Dashboard Badges
+                if (stateM1) {
+                    badge1.textContent = "Point A (Hiro): LOCKED";
+                    badge1.className = "status-badge active";
                 } else {
-                    statusDiv.textContent = `Error: ${error.message}. (Note: Camera APIs require HTTPS or localhost).`;
+                    badge1.textContent = "Point A (Hiro): LOST";
+                    badge1.className = "status-badge missing";
+                }
+
+                if (stateM2) {
+                    badge2.textContent = "Point B (Kanji): LOCKED";
+                    badge2.className = "status-badge active";
+                } else {
+                    badge2.textContent = "Point B (Kanji): LOST";
+                    badge2.className = "status-badge missing";
+                }
+
+                // Core Processing Conditional Matrix
+                if (stateM1 && stateM2) {
+                    // Extract exact spatial coordinates relative to the master system coordinates
+                    m1.object3D.getWorldPosition(v1);
+                    m2.object3D.getWorldPosition(v2);
+
+                    // Compute absolute distance vector length
+                    const computedDistance = v1.distanceTo(v2);
+
+                    // Dynamic Metrics Rendering Structure
+                    if (computedDistance < 1.0) {
+                        display.textContent = `${(computedDistance * 100).toFixed(1)} cm`;
+                    } else {
+                        display.textContent = `${computedDistance.toFixed(3)} m`;
+                    }
+
+                    // Vector Overlay Draw Routine
+                    renderDynamic3DVectorLine(v1, v2);
+
+                } else {
+                    display.textContent = "SCANNING SPACE...";
+                    clearDynamicVectorLine();
                 }
             }
-        }
 
-        // Run the function when the page loads
-        window.addEventListener('DOMContentLoaded', initCamera);
-    </script>
-</body>
-</html>
+            /**
+             * Generates a structural 3D vector connector line between active coordinates
+             */
+            function renderDynamic3DVectorLine(startPoint, endPoint) {
+                clearDynamicVectorLine();
+
+                // Build modern 3D line geometry component
+                const lineEntity = document.createElement('a-entity');
+                
+                // Construct A-Frame native line tracking object parameters
+                lineEntity.setAttribute('line', {
+                    start: `${startPoint.x} ${startPoint.y} ${startPoint.z}`,
