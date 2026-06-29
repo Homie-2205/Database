@@ -1,76 +1,487 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>5 Meter AR Ruler</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Advanced WebAR Spatial Tape Measure</title>
+    
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    
+    <style>
+        :root {
+            --primary: #00e676;
+            --primary-hover: #00c853;
+            --danger: #ff1744;
+            --danger-hover: #d50000;
+            --bg-dark: rgba(18, 18, 18, 0.85);
+            --text-light: #f5f5f5;
+        }
 
-<style>
-html,body{
-margin:0;
-overflow:hidden;
-background:#000;
-font-family:Arial;
-}
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
 
-#start{
-position:absolute;
-top:20px;
-left:20px;
-padding:15px 25px;
-font-size:18px;
-z-index:10;
-}
+        /* UI Shell Containers */
+        #ar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            pointer-events: none; /* Let clicks pass through to scene elements if needed */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+            padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+        }
 
-#info{
-position:absolute;
-bottom:20px;
-left:20px;
-right:20px;
-color:white;
-background:rgba(0,0,0,.6);
-padding:12px;
-border-radius:10px;
-z-index:10;
-}
-</style>
+        .interactive {
+            pointer-events: auto; /* Re-enable pointer events for UI items */
+        }
+
+        /* Top Bar Diagnostics & Unit Selectors */
+        .top-interface {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .hud-panel {
+            background: var(--bg-dark);
+            color: var(--text-light);
+            padding: 12px 16px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .readout-main {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+        }
+
+        .readout-sub {
+            font-size: 11px;
+            color: #b0bec5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .unit-selector {
+            display: flex;
+            background: var(--bg-dark);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .unit-btn {
+            background: transparent;
+            border: none;
+            color: #808080;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .unit-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        /* Target Reticle (Screen Center) */
+        #screen-reticle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            pointer-events: none;
+            z-index: 9998;
+            transition: transform 0.1s ease;
+        }
+
+        #screen-reticle::before, #screen-reticle::after {
+            content: '';
+            position: absolute;
+            background: var(--primary);
+        }
+
+        /* Crosshair configuration */
+        #screen-reticle::before { top: 15px; left: 0; width: 32px; height: 2px; }
+        #screen-reticle::after { top: 0; left: 15px; width: 2px; height: 32px; }
+        
+        #reticle-dot {
+            position: absolute;
+            top: 13px;
+            left: 13px;
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+        }
+
+        /* Bottom Controls Wrapper */
+        .bottom-interface {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* Control Tray Rows */
+        .control-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .btn-action {
+            flex: 2;
+            background: var(--primary);
+            color: #121212;
+            border: none;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 14px;
+            box-shadow: 0 6px 16px rgba(0, 230, 118, 0.3);
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-action:active {
+            transform: scale(0.97);
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            flex: 1;
+            background: var(--bg-dark);
+            color: #ff5252;
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            padding: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 14px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:active {
+            background: var(--danger-hover);
+            color: white;
+        }
+
+        /* History Logs Sidebar/Drawer */
+        .history-panel {
+            width: 100%;
+            max-width: 450px;
+            max-height: 110px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            padding: 8px;
+            box-sizing: border-box;
+            font-size: 12px;
+            color: #cfd8dc;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .history-item:last-child { border-bottom: none; }
+    </style>
 </head>
 <body>
 
-<button id="start">Start AR</button>
+    <script>
+        const AudioFX = {
+            ctx: null,
+            init() { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            playChime(freq, type, duration) {
+                if(!this.ctx) this.init();
+                try {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.type = type || 'sine';
+                    osc.frequency.setValueAtTime(freq || 440, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) { console.warn("Audio Context init delayed until physical interaction."); }
+            }
+        };
+    </script>
 
-<div id="info">
-Target Length: <b>5.00 meters</b><br>
-Tap two points in AR to measure.
-</div>
+    <div id="ar-overlay">
+        <div class="top-interface interactive">
+            <div class="hud-panel" id="hud-readout">
+                <div class="readout-main" id="main-dist">0.00 m</div>
+                <div class="readout-sub" id="status-label">System Ready</div>
+            </div>
+            
+            <div class="unit-selector">
+                <button class="unit-btn active" onclick="App.setUnit('m')">M</button>
+                <button class="unit-btn" onclick="App.setUnit('cm')">CM</button>
+                <button class="unit-btn" onclick="App.setUnit('ft')">FT</button>
+            </div>
+        </div>
 
-<script type="module">
+        <div id="screen-reticle">
+            <div id="reticle-dot"></div>
+        </div>
 
-const button=document.getElementById("start");
+        <div class="bottom-interface interactive">
+            <div class="history-panel" id="log-container">
+                <div style="text-align: center; color: #78909c; padding-top: 25px;">No recorded measurement history yet.</div>
+            </div>
+            <div class="control-row">
+                <button class="btn-secondary" id="reset-btn" style="visibility: hidden;">Clear</button>
+                <button class="btn-action" id="trigger-btn">Mark Point A</button>
+            </div>
+        </div>
+    </div>
 
-button.onclick=async()=>{
+    <a-scene
+        embedded
+        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
+        renderer="logarithmicDepthBuffer: true; colorManagement: true; antialias: true;">
+        
+        <a-assets>
+            <a-mixin id="marker-point" geometry="primitive: sphere; radius: 0.035" material="color: #00e676; metalness: 0.2; roughness: 0.2; emissive: #00e676; emissiveIntensity: 0.3"></a-mixin>
+            <a-mixin id="target-point" geometry="primitive: sphere; radius: 0.035" material="color: #00b0ff; metalness: 0.2; roughness: 0.2"></a-mixin>
+        </a-assets>
 
-if(!navigator.xr){
-alert("WebXR is not supported on this device.");
-return;
-}
+        <a-entity camera look-controls id="main-camera">
+            <a-entity id="raycaster-core"
+                      raycaster="objects: .ray-surface; interval: 50; showLine: false;"
+                      position="0 0 0"
+                      rotation="0 0 0">
+            </a-entity>
+        </a-entity>
 
-const supported=await navigator.xr.isSessionSupported("immersive-ar");
+        <a-plane class="ray-surface" 
+                 position="0 -1.5 0" 
+                 rotation="-90 0 0" 
+                 width="100" 
+                 height="100" 
+                 material="opacity: 0.0; transparent: true; depthWrite: false;">
+        </a-plane>
 
-if(!supported){
-alert("AR is not supported on this phone.");
-return;
-}
+        <a-entity id="runtime-space-anchors"></a-entity>
+    </a-scene>
 
-const session=await navigator.xr.requestSession("immersive-ar",{
-requiredFeatures:["hit-test"]
-});
+    <script>
+        const App = {
+            points: [],
+            currentUnit: 'm',
+            history: [],
+            
+            // DOM Elements Mapping Cache
+            dom: {
+                triggerBtn: document.getElementById('trigger-btn'),
+                resetBtn: document.getElementById('reset-btn'),
+                mainDist: document.getElementById('main-dist'),
+                statusLabel: document.getElementById('status-label'),
+                anchorContainer: document.getElementById('runtime-space-anchors'),
+                raycaster: document.getElementById('raycaster-core'),
+                logs: document.getElementById('log-container')
+            },
 
-alert("AR session started.\nYou can extend this with hit-testing to measure up to 5 meters.");
+            init() {
+                // Attach event Listeners
+                this.dom.triggerBtn.addEventListener('click', () => this.handleTrigger());
+                this.dom.resetBtn.addEventListener('click', () => this.resetActiveTracking());
+                
+                // Continuous Runtime System Frame loop update monitoring intersections
+                setInterval(() => this.pollRaycasterIntersection(), 45);
+            },
 
-};
+            // Intercept real-world vector tracking parameters
+            pollRaycasterIntersection() {
+                let rayComponents = this.dom.raycaster.components.raycaster;
+                if (!rayComponents) return;
 
-</script>
+                let intersections = rayComponents.intersections;
+                if (intersections && intersections.length > 0) {
+                    let point3D = intersections[0].point; // Real physical spatial vector
+                    
+                    // If Point A is assigned, continuously calculate realtime distance to current look-at position
+                    if (this.points.length === 1) {
+                        let activeDistance = this.points[0].distanceTo(point3D);
+                        this.updateDisplay(activeDistance, true);
+                    }
+                    return point3D;
+                }
+                return null;
+            },
 
+            handleTrigger() {
+                let activeIntersectionPoint = this.pollRaycasterIntersection();
+                
+                // Fallback tracking vectors if clear intersection with infinite plane is dropped
+                if (!activeIntersectionPoint) {
+                    let fallbackCamVec = new THREE.Vector3();
+                    let fallbackDirVec = new THREE.Vector3();
+                    document.getElementById('main-camera').object3D.getWorldPosition(fallbackCamVec);
+                    document.getElementById('main-camera').object3D.getWorldDirection(fallbackDirVec);
+                    activeIntersectionPoint = fallbackCamVec.add(fallbackDirVec.multiplyScalar(-1.5));
+                }
+
+                if (this.points.length === 0) {
+                    // Set up First Point (Point A)
+                    AudioFX.playChime(587.33, 'triangle', 0.15); // D5 Note
+                    this.points.push(activeIntersectionPoint.clone());
+                    this.spawnSceneMarker(activeIntersectionPoint, 'marker-point');
+                    
+                    this.dom.statusLabel.innerText = "Tracking to point B...";
+                    this.dom.triggerBtn.innerText = "Mark Point B";
+                    this.dom.triggerBtn.style.backgroundColor = "#00b0ff";
+                    this.dom.resetBtn.style.visibility = "visible";
+
+                } else if (this.points.length === 1) {
+                    // Set up Final Point (Point B)
+                    AudioFX.playChime(880.00, 'sine', 0.25); // A5 High Confirmation
+                    this.points.push(activeIntersectionPoint.clone());
+                    this.spawnSceneMarker(activeIntersectionPoint, 'target-point');
+
+                    let calculatedFinalDistance = this.points[0].distanceTo(this.points[1]);
+                    this.spawnSceneVectorLine(this.points[0], this.points[1]);
+                    this.updateDisplay(calculatedFinalDistance, false);
+                    this.pushHistoryToLog(calculatedFinalDistance);
+
+                    this.dom.statusLabel.innerText = "Measurement complete";
+                    this.dom.triggerBtn.innerText = "Max Points Reached";
+                    this.dom.triggerBtn.disabled = true;
+                    this.dom.triggerBtn.style.opacity = "0.4";
+                }
+            },
+
+            spawnSceneMarker(pos, mixinId) {
+                let marker = document.createElement('a-entity');
+                marker.setAttribute('mixin', mixinId);
+                marker.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+                this.dom.anchorContainer.appendChild(marker);
+            },
+
+            spawnSceneVectorLine(p1, p2) {
+                let lineEntity = document.createElement('a-entity');
+                lineEntity.setAttribute('line', {
+                    start: p1,
+                    end: p2,
+                    color: '#ff3d00',
+                    width: 6
+                });
+                this.dom.anchorContainer.appendChild(lineEntity);
+            },
+
+            setUnit(unitSig) {
+                this.currentUnit = unitSig;
+                // Highlight corresponding unit DOM button state toggles
+                document.querySelectorAll('.unit-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if(btn.getAttribute('onclick').includes(`'${unitSig}'`)) btn.classList.add('active');
+                });
+                
+                // Recalculate immediate viewport layouts dynamically
+                if (this.points.length === 2) {
+                    this.updateDisplay(this.points[0].distanceTo(this.points[1]), false);
+                } else if(this.points.length === 0) {
+                    this.dom.mainDist.innerText = `0.00 ${unitSig}`;
+                }
+            },
+
+            updateDisplay(valInMeters, isRealtime) {
+                let computedText = "";
+                switch(this.currentUnit) {
+                    case 'm':
+                        computedText = `${valInMeters.toFixed(2)} m`;
+                        break;
+                    case 'cm':
+                        computedText = `${(valInMeters * 100).toFixed(1)} cm`;
+                        break;
+                    case 'ft':
+                        let totalInches = valInMeters * 39.3701;
+                        let feet = Math.floor(totalInches / 12);
+                        let inches = Math.round(totalInches % 12);
+                        computedText = `${feet}' ${inches}"`;
+                        break;
+                }
+                this.dom.mainDist.innerText = computedText;
+                if(isRealtime) this.dom.statusLabel.innerText = "Calculating dynamic tracking...";
+            },
+
+            pushHistoryToLog(finalValue) {
+                this.history.unshift(finalValue);
+                if(this.history.length > 5) this.history.pop(); // Cap length logs visibility bounds
+                
+                this.dom.logs.innerHTML = "";
+                this.history.forEach((item, index) => {
+                    let recordRow = document.createElement('div');
+                    recordRow.className = "history-item";
+                    let unitFormatted = "";
+                    if(this.currentUnit==='m') unitFormatted = `${item.toFixed(2)} m`;
+                    else if(this.currentUnit==='cm') unitFormatted = `${(item*100).toFixed(1)} cm`;
+                    else unitFormatted = `${Math.floor((item*39.37)/12)}' ${Math.round((item*39.37)%12)}"`;
+
+                    recordRow.innerHTML = `<span>Run Vector Record #${this.history.length - index}</span> <strong>${unitFormatted}</strong>`;
+                    this.dom.logs.appendChild(recordRow);
+                });
+            },
+
+            resetActiveTracking() {
+                AudioFX.playChime(220, 'sawtooth', 0.1);
+                this.points = [];
+                this.dom.anchorContainer.innerHTML = '';
+                this.dom.mainDist.innerText = `0.00 ${this.currentUnit}`;
+                this.dom.statusLabel.innerText = "System Reset. Ready.";
+                this.dom.triggerBtn.innerText = "Mark Point A";
+                this.dom.triggerBtn.disabled = false;
+                this.dom.triggerBtn.style.opacity = "1";
+                this.dom.triggerBtn.style.backgroundColor = "var(--primary)";
+                this.dom.resetBtn.style.visibility = "hidden";
+            }
+        };
+
+        // Instantiate App lifecycle listeners on load window timeline bounds
+        window.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
 </body>
 </html>
