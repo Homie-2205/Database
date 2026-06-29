@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Regla Web AR</title>
+    <title>Regla Web AR por Botones</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -11,148 +11,186 @@
 <body style="margin: 0; overflow: hidden;">
 
     <div id="ui-container">
-        <h2>Regla AR</h2>
-        <p id="status">Apunta al suelo y toca para fijar el Punto A</p>
-        <div id="distance-display">Distancia: <span id="distance-value">0.00</span> m</div>
-        <button id="reset-btn">Reiniciar</button>
+        <h2>Regla AR Profesional</h2>
+        <p id="status">Ubícate en el inicio y presiona "Punto A"</p>
+        
+        <div id="distance-display">
+            Distancia: <span id="distance-value">0.00</span> m
+        </div>
+        
+        <div class="btn-group">
+            <button id="btn-A" class="action-btn">Fijar Punto A</button>
+            <button id="btn-B" class="action-btn" disabled>Fijar Punto B</button>
+        </div>
+        
+        <button id="reset-btn">Reiniciar Medición</button>
     </div>
 
-    <a-scene 
-        embedded 
-        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
-        renderer="logarithmicDepthBuffer: true;">
-        
-        <a-entity id="point-A" geometry="primitive: sphere; radius: 0.02" material="color: #ff0000;" visible="false"></a-entity>
-        <a-entity id="point-B" geometry="primitive: sphere; radius: 0.02" material="color: #00ff00;" visible="false"></a-entity>
-        
-        <a-entity id="measurement-line" line="color: #ffff00; start: 0 0 0; end: 0 0 0" visible="false"></a-entity>
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <a-entity id="marker-A" geometry="primitive: sphere; radius: 0.03" material="color: #ff3b30;" visible="false"></a-entity>
+        <a-entity id="marker-B" geometry="primitive: sphere; radius: 0.03" material="color: #34c759;" visible="false"></a-entity>
+        <a-entity id="line-AB" line="color: #ffcc00; start: 0 0 0; end: 0 0 0" visible="false"></a-entity>
 
-        <a-entity camera look-controls cursor="rayOrigin: mouse"></a-entity>
+        <a-entity camera id="main-camera" look-controls></a-entity>
     </a-scene>
-
-    <style>  #ui-container {
+<style>  #ui-container {
     position: absolute;
-    top: 20px;
+    bottom: 30px; /* Movido abajo para que sea más ergonómico en celulares */
     left: 50%;
     transform: translateX(-50%);
-    z-index: 10; /* Asegura que esté por encima de la cámara */
-    background: rgba(0, 0, 0, 0.75);
+    z-index: 100;
+    background: rgba(20, 20, 20, 0.85);
+    backdrop-filter: blur(5px);
     color: white;
-    padding: 15px 25px;
-    border-radius: 15px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+    border-radius: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     text-align: center;
-    width: 80%;
-    max-width: 320px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    width: 85%;
+    max-width: 360px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 
 #ui-container h2 {
     margin: 0 0 5px 0;
-    font-size: 1.2rem;
-    color: #4af;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    color: #0a84ff;
 }
 
 #status {
-    margin: 5px 0;
-    font-size: 0.9rem;
-    color: #ccc;
+    margin: 5px 0 15px 0;
+    font-size: 0.85rem;
+    color: #eaeaea;
 }
 
 #distance-display {
-    font-size: 1.4rem;
+    font-size: 1.8rem;
     font-weight: bold;
-    margin: 15px 0;
-    color: #2fed7b;
+    margin-bottom: 15px;
+    color: #34c759;
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.action-btn {
+    flex: 1;
+    background: #0a84ff;
+    border: none;
+    color: white;
+    padding: 12px 10px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.action-btn:disabled {
+    background: #555;
+    color: #888;
+    cursor: not-allowed;
+}
+
+#btn-B {
+    background: #30d158;
+}
+
+#btn-B:disabled {
+    background: #225530;
+    color: #666;
 }
 
 #reset-btn {
-    background: #ff3b30;
-    border: none;
-    color: white;
-    padding: 8px 15px;
-    border-radius: 5px;
-    font-weight: bold;
+    background: transparent;
+    border: 1px solid #ff453a;
+    color: #ff453a;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
     cursor: pointer;
-    transition: background 0.2s;
-}
+    width: 100%;
+}</style>
+    <script>   let posA = null;
+let posB = null;
 
-#reset-btn:hover {
-    background: #d32f2f;
-} </style><script> let pointA = null;
-let pointB = null;
-
+// Elementos de la interfaz (UI)
+const btnA = document.getElementById('btn-A');
+const btnB = document.getElementById('btn-B');
+const resetBtn = document.getElementById('reset-btn');
 const statusText = document.getElementById('status');
 const distanceValue = document.getElementById('distance-value');
-const resetBtn = document.getElementById('reset-btn');
 
-const elA = document.getElementById('point-A');
-const elB = document.getElementById('point-B');
-const line = document.getElementById('measurement-line');
-const scene = document.querySelector('a-scene');
+// Elementos 3D de la escena
+const markerA = document.getElementById('marker-A');
+const markerB = document.getElementById('marker-B');
+const lineAB = document.getElementById('line-AB');
+const cameraEl = document.getElementById('main-camera');
 
-// Escuchar el click en la pantalla/escena
-scene.addEventListener('click', (event) => {
-    // Obtenemos la posición actual de la cámara en el espacio 3D
-    const cameraEl = document.querySelector('[camera]');
-    const cameraPosition = cameraEl.object3D.position;
-
-    // Proyectamos un punto un poco hacia adelante de la cámara (ej. 0.5 metros)
-    // para simular que estamos marcando lo que la cámara está apuntando
-    const direction = new THREE.Vector3();
-    cameraEl.object3D.getWorldDirection(direction);
+// BOTÓN A: Guarda la posición inicial
+btnA.addEventListener('click', () => {
+    // Captura la posición de la cámara en el mundo 3D
+    const camPos = cameraEl.object3D.position;
     
-    // Calculamos el punto exacto en el espacio frente a nosotros
-    const targetPosition = {
-        x: cameraPosition.x - direction.x * 0.5,
-        y: cameraPosition.y - direction.y * 0.5,
-        z: cameraPosition.z - direction.z * 0.5
-    };
-
-    if (!pointA) {
-        // Fijar Primer Punto
-        pointA = targetPosition;
-        elA.setAttribute('position', `${pointA.x} ${pointA.y} ${pointA.z}`);
-        elA.setAttribute('visible', 'true');
-        statusText.innerText = "Punto A fijado. Mídete y toca para el Punto B";
-    } else if (!pointB) {
-        // Fijar Segundo Punto
-        pointB = targetPosition;
-        elB.setAttribute('position', `${pointB.x} ${pointB.y} ${pointB.z}`);
-        elB.setAttribute('visible', 'true');
-
-        // Dibujar línea entre A y B
-        line.setAttribute('line', {
-            start: `${pointA.x} ${pointA.y} ${pointA.z}`,
-            end: `${pointB.x} ${pointB.y} ${pointB.z}`
-        });
-        line.setAttribute('visible', 'true');
-
-        // Calcular la distancia real
-        const distance = calculateDistance(pointA, pointB);
-        distanceValue.innerText = distance.toFixed(2); // Dos decimales
-        statusText.innerText = "¡Medición completada!";
-    }
+    posA = { x: camPos.x, y: camPos.y, z: camPos.z };
+    
+    // Coloca la esfera roja en esa posición
+    markerA.setAttribute('position', `${posA.x} ${posA.y} ${posA.z}`);
+    markerA.setAttribute('visible', 'true');
+    
+    // Cambia estados de la interfaz
+    btnA.disabled = true;
+    btnB.disabled = false;
+    statusText.innerText = "Punto A guardado. Camina hacia el final y presiona 'Punto B'";
 });
 
-// Función matemática para calcular distancia 3D (Euclidiana)
-function calculateDistance(p1, p2) {
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const dz = p2.z - p1.z;
-    return Math.sqrt(dx * dx + dy * dy + dz * dz);
-}
+// BOTÓN B: Guarda la posición final y calcula
+btnB.addEventListener('click', () => {
+    if (!posA) return;
 
-// Botón de Reinicio
-resetBtn.addEventListener('click', (e) => {
-    e.stopPropagation(); // Evita que el click cuente como un nuevo punto
-    pointA = null;
-    pointB = null;
-    elA.setAttribute('visible', 'false');
-    elB.setAttribute('visible', 'false');
-    line.setAttribute('visible', 'false');
+    const camPos = cameraEl.object3D.position;
+    posB = { x: camPos.x, y: camPos.y, z: camPos.z };
+    
+    // Coloca la esfera verde
+    markerB.setAttribute('position', `${posB.x} ${posB.y} ${posB.z}`);
+    markerB.setAttribute('visible', 'true');
+    
+    // Dibuja la línea entre los dos puntos
+    lineAB.setAttribute('line', {
+        start: `${posA.x} ${posA.y} ${posA.z}`,
+        end: `${posB.x} ${posB.y} ${posB.z}`
+    });
+    lineAB.setAttribute('visible', 'true');
+    
+    // Calcula la distancia matemática 3D
+    const distance = Math.sqrt(
+        Math.pow(posB.x - posA.x, 2) +
+        Math.pow(posB.y - posA.y, 2) +
+        Math.pow(posB.z - posA.z, 2)
+    );
+    
+    // Muestra el resultado
+    distanceValue.innerText = distance.toFixed(2);
+    btnB.disabled = true;
+    statusText.innerText = "Medición realizada con éxito.";
+});
+
+// BOTÓN REINICIAR
+resetBtn.addEventListener('click', () => {
+    posA = null;
+    posB = null;
+    
+    markerA.setAttribute('visible', 'false');
+    markerB.setAttribute('visible', 'false');
+    lineAB.setAttribute('visible', 'false');
+    
     distanceValue.innerText = "0.00";
-    statusText.innerText = "Apunta al suelo y toca para fijar el Punto A";
+    btnA.disabled = false;
+    btnB.disabled = true;
+    statusText.innerText = "Ubícate en el inicio y presiona 'Punto A'";
 });</script>
 </body>
 </html>
