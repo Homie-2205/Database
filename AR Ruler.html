@@ -260,6 +260,7 @@
             /**
              * Generates a structural 3D vector connector line between active coordinates
              */
+${endPoint.x} ${endPoint.y} ${endPoint.z},color: '#00f3ff',opacity: 0.8});currentLineObj = lineEntity;lineContainer.appendChild(lineEntity);}/*** Flushes unused geometry components out of memory allocation*/function clearDynamicVectorLine() {if (currentLineObj) {lineContainer.removeChild(currentLineObj);currentLineObj = null;}}// Set Engine Execution to 60 Hertz Processing cycle ratesetInterval(spatialCalculationEngine, 16.67);});
             function renderDynamic3DVectorLine(startPoint, endPoint) {
                 clearDynamicVectorLine();
 
@@ -269,3 +270,6 @@
                 // Construct A-Frame native line tracking object parameters
                 lineEntity.setAttribute('line', {
                     start: `${startPoint.x} ${startPoint.y} ${startPoint.z}`,
+
+</body>
+</html>
