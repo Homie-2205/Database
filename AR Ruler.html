@@ -1,276 +1,367 @@
-<!DOCTYPE html>
-<html lang="en">
+
+
+        <!DOCTYPE html>
+<html lang="es">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Enterprise Web AR Ruler Pro</title>
-    
-    <!-- Core External Frameworks via Secure CDN -->
-    <script src="https://aframe.io"></script>
-    <script src="https://githack.com"></script>
-
+    <title>Regla de Realidad Aumentada (WebXR)</title>
     <style>
-        /* Modern UI/UX Overlay Styles */
-        :root {
-            --primary-color: #00f3ff;
-            --accent-color: #ff0055;
-            --bg-glass: rgba(10, 15, 30, 0.75);
-            --border-glass: rgba(255, 255, 255, 0.1);
-        }
-
-        body, html {
+        body {
             margin: 0;
             padding: 0;
-            width: 100%;
-            height: 100%;
             overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            user-select: none;
-            -webkit-user-select: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
         }
 
-        /* Top HUD Dashboard */
-        #hud-container {
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 450px;
-            background: var(--bg-glass);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-glass);
-            border-radius: 16px;
-            padding: 15px 20px;
-            color: #ffffff;
-            z-index: 9999;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            text-align: center;
-            pointer-events: auto;
-        }
-
-        #hud-container h1 {
-            margin: 0 0 4px 0;
-            font-size: 1.25rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: var(--primary-color);
-        }
-
-        #hud-container p {
-            margin: 0 0 12px 0;
-            font-size: 0.8rem;
-            color: #b0b5c0;
-        }
-
-        /* Live Tracker Metrics Panel */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .status-badge {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 6px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            border: 1px solid transparent;
-            transition: all 0.3s ease;
-        }
-
-        .status-badge.active {
-            border-color: var(--primary-color);
-            background: rgba(0, 243, 255, 0.1);
-            color: var(--primary-color);
-        }
-
-        .status-badge.missing {
-            border-color: var(--accent-color);
-            background: rgba(255, 0, 85, 0.1);
-            color: var(--accent-color);
-        }
-
-        #measurement-display {
-            font-size: 1.8rem;
-            font-weight: 800;
-            font-family: monospace;
-            color: #ffffff;
-            text-shadow: 0 0 10px var(--primary-color);
-            padding: 8px 0;
-            border-top: 1px solid var(--border-glass);
-        }
-
-        /* Error Handler Screen */
-        #error-screen {
-            display: none;
+        /* Contenedor de la interfaz de usuario */
+        #ui-container {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #0d0f14;
-            color: #ffffff;
-            z-index: 10000;
-            justify-content: center;
-            align-items: center;
+            display: flex;
             flex-direction: column;
-            padding: 30px;
+            justify-content: space-between;
+            pointer-events: none; /* Permite tocar a través de la UI profunda */
+            z-index: 10;
+        }
+
+        /* Panel de información superior */
+        .header {
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 15px;
             text-align: center;
+            backdrop-filter: blur(5px);
+            border-bottom: 2px solid #00ffcc;
         }
 
-        #error-screen h2 {
-            color: var(--accent-color);
-            margin-bottom: 10px;
+        .header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
         }
 
-        /* Hide Default Framework Overlays */
-        .a-enter-vr, .a-enter-ar {
-            display: none !important;
+        .header p {
+            margin: 5px 0 0 0;
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        /* Indicador de distancia flotante */
+        #distance-panel {
+            background: rgba(20, 20, 20, 0.85);
+            color: #00ffcc;
+            align-self: center;
+            margin-top: 20px;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: 1px solid #00ffcc;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+            display: none;
+        }
+
+        /* Retícula/Mira en el centro de la pantalla */
+        #reticle-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #00ffcc;
+            box-shadow: 0 0 8px #00ffcc;
+            pointer-events: none;
+            display: block;
+        }
+
+        /* Panel de botones inferior */
+        .controls {
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            pointer-events: auto; /* Reactiva los toques para los botones */
+        }
+
+        .btn {
+            background: #00ffcc;
+            color: #111;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 255, 204, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            background: #00cca3;
+        }
+
+        .btn-reset {
+            background: #ff3366;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(255, 51, 102, 0.4);
+        }
+
+        .btn-reset:active {
+            background: #cc2552;
+        }
+
+        /* Mensaje de error o falta de soporte */
+        #error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            background: rgba(255,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            width: 80%;
+            max-width: 400px;
         }
     </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
 
-    <!-- Error Fallback Screen -->
-    <div id="error-screen">
-        <h2>Security Requirement</h2>
-        <p id="error-message">Camera access failed. WebXR and AR.js require an HTTPS connection or localhost environment to run properly.</p>
-    </div>
-
-    <!-- UI Overlay Dashboard -->
-    <div id="hud-container">
-        <h1>AR Ruler Engine</h1>
-        <p>Align both markers within the viewport camera grid</p>
-        
-        <div class="metrics-grid">
-            <div id="badge-m1" class="status-badge missing">Point A (Hiro): LOST</div>
-            <div id="badge-m2" class="status-badge missing">Point B (Kanji): LOST</div>
+    <div id="ui-container">
+        <div class="header">
+            <h1>Regla AR Pro</h1>
+            <p>Apunta al suelo para detectar superficies</p>
         </div>
 
-        <div id="measurement-display">SYSTEM INIT...</div>
+        <div id="distance-panel">0.00 m</div>
+
+        <div class="controls">
+            <button id="btn-place" class="btn">Fijar Punto</button>
+            <button id="btn-reset" class="btn btn-reset">Reiniciar</button>
+        </div>
     </div>
 
-    <!-- Web AR Viewport Execution Environment -->
-    <a-scene 
-        embedded 
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-        renderer="logarithmicDepthBuffer: true; colorManagement: true;">
-        
-        <!-- Physical Space Anchor Alpha (Hiro Standard) -->
-        <a-marker preset="hiro" id="marker-alpha">
-            <!-- Central Node point -->
-            <a-sphere position="0 0 0" radius="0.04" color="#00f3ff" material="emissive: #00f3ff; emissiveIntensity: 0.5"></a-sphere>
-            <a-ring position="0 0 0" radius-inner="0.06" radius-outer="0.08" rotation="-90 0 0" color="#00f3ff"></a-ring>
-        </a-marker>
+    <div id="reticle-guide"></div>
+    <div id="error-message">Este dispositivo o navegador no soporta Realidad Aumentada (WebXR). Prueba con Chrome en Android.</div>
 
-        <!-- Physical Space Anchor Beta (Kanji Standard) -->
-        <a-marker preset="kanji" id="marker-beta">
-            <!-- Central Node point -->
-            <a-sphere position="0 0 0" radius="0.04" color="#ff0055" material="emissive: #ff0055; emissiveIntensity: 0.5"></a-sphere>
-            <a-ring position="0 0 0" radius-inner="0.06" radius-outer="0.08" rotation="-90 0 0" color="#ff0055"></a-ring>
-        </a-marker>
+    <script type="module">
+        import * as THREE from 'three';
+        import { ARButton } from 'three/addons/webxr/ARButton.js';
 
-        <!-- Dynamic Vector Overlay System -->
-        
+        // Variables globales
+        let container, camera, scene, renderer;
+        let reticle;
+        let hitTestSource = null;
+        let hitTestSourceRequested = false;
 
-        <!-- Static Real-World Perspective Camera Module -->
-        
-        
-    </a-scene>
+        // Lógica de medición
+        let points = []; // Almacena las coordenadas de los puntos colocados
+        let line = null;  // Objeto visual de la línea
 
-    <script>
-        // Production Script Implementation
-        document.addEventListener('DOMContentLoaded', () => {
-            
-            // Environment Verification Check
-            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const isHttps = window.location.protocol === 'https:';
-            
-            if (!isHttps && !isLocalhost) {
-                document.getElementById('error-screen').style.display = 'flex';
-                document.getElementById('hud-container').style.display = 'none';
-                return;
+        // Elementos del DOM
+        const btnPlace = document.getElementById('btn-place');
+        const btnReset = document.getElementById('btn-reset');
+        const distancePanel = document.getElementById('distance-panel');
+        const reticleGuide = document.getElementById('reticle-guide');
+
+        init();
+
+        function init() {
+            container = document.createElement('div');
+            document.body.appendChild(container);
+
+            // 1. Configuración de la Escena y Cámara
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+            // 2. Configuración del Renderizador
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // 3. Iluminación básica
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+            light.position.set(0.5, 1, 0.25);
+            scene.add(light);
+
+            // 4. Configurar Botón de AR de Three.js
+            const arButton = ARButton.createButton(renderer, { 
+                requiredFeatures: ['hit-test'],
+                optionalFeatures: ['dom-overlay'],
+                domOverlay: { root: document.getElementById('ui-container') }
+            });
+            document.body.appendChild(arButton);
+
+            // 5. Crear la retícula (el anillo indicador que se posa en el suelo)
+            reticle = new THREE.Mesh(
+                new THREE.RingGeometry(0.04, 0.05, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00ffcc })
+            );
+            reticle.matrixAutoUpdate = false;
+            reticle.visible = false;
+            scene.add(reticle);
+
+            // 6. Eventos de los botones de la interfaz
+            btnPlace.addEventListener('click', onPlacePoint);
+            btnReset.addEventListener('click', clearMeasurement);
+
+            // 7. Ajuste de pantalla si cambia el tamaño
+            window.addEventListener('resize', onWindowResize);
+
+            // Ciclo de renderizado loop de WebXR
+            renderer.setAnimationLoop(render);
+        }
+
+        // Función que coloca un punto en las coordenadas actuales de la retícula
+        function onPlacePoint() {
+            if (!reticle.visible) return; // Si no hay superficie detectada, no hace nada
+
+            // Extraer posición de la matriz de la retícula
+            const position = new THREE.Vector3();
+            position.setFromMatrixPosition(reticle.matrix);
+
+            // Crear una pequeña esfera visual en el punto
+            const sphereGeo = new THREE.SphereGeometry(0.015, 16, 16);
+            const sphereMat = new THREE.MeshBasicMaterial({ color: 0xff3366 });
+            const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+            sphere.position.copy(position);
+            scene.add(sphere);
+
+            // Guardar el punto y el objeto visual
+            points.push({
+                coords: position,
+                mesh: sphere
+            });
+
+            // Si ya hay dos o más puntos, dibujamos/actualizamos la línea y medimos
+            if (points.length >= 2) {
+                updateLine();
+                calculateDistance();
+            }
+        }
+
+        // Dibuja una línea entre los puntos acumulados
+        function updateLine() {
+            if (line) scene.remove(line);
+
+            const material = new THREE.LineBasicMaterial({ 
+                color: 0x00ffcc, 
+                linewidth: 3 // Nota: en WebGL el grosor suele ignorarse y quedarse en 1px
+            });
+
+            const geometry = new THREE.BufferGeometry().setFromPoints(
+                points.map(p => p.coords)
+            );
+
+            line = new THREE.Line(geometry, material);
+            scene.add(line);
+        }
+
+        // Calcula la distancia matemática entre el primer y el último punto
+        function calculateDistance() {
+            const p1 = points[points.length - 2].coords;
+            const p2 = points[points.length - 1].coords;
+
+            // Distancia Euclidiana 3D
+            const dist = p1.distanceTo(p2);
+
+            // Mostrar el panel y actualizar el texto (convertido a metros y centímetros)
+            distancePanel.style.display = 'block';
+            if(dist < 1) {
+                distancePanel.innerText = `${(dist * 100).toFixed(1)} cm`;
+            } else {
+                distancePanel.innerText = `${dist.toFixed(2)} m`;
+            }
+        }
+
+        // Resetea toda la escena
+        function clearMeasurement() {
+            // Eliminar esferas
+            points.forEach(p => scene.remove(p.mesh));
+            points = [];
+
+            // Eliminar línea
+            if (line) {
+                scene.remove(line);
+                line = null;
             }
 
-            // DOM Object References
-            const m1 = document.querySelector('#marker-alpha');
-            const m2 = document.querySelector('#marker-beta');
-            const badge1 = document.querySelector('#badge-m1');
-            const badge2 = document.querySelector('#badge-m2');
-            const display = document.querySelector('#measurement-display');
-            const lineContainer = document.querySelector('#vector-line-container');
+            // Ocultar panel de distancia
+            distancePanel.style.display = 'none';
+            distancePanel.innerText = "0.00 m";
+        }
 
-            // Global Optimization Vectors (Avoids Garbage Collection spikes inside loop)
-            const v1 = new THREE.Vector3();
-            const v2 = new THREE.Vector3();
-            let currentLineObj = null;
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-            /**
-             * Primary Spatial Analytical Execution Loop
-             */
-            function spatialCalculationEngine() {
-                const stateM1 = m1 && m1.object3D && m1.object3D.visible;
-                const stateM2 = m2 && m2.object3D && m2.object3D.visible;
+        // Bucle de renderizado (se ejecuta a los FPS de tu pantalla AR)
+        function render(timestamp, frame) {
+            if (frame) {
+                const referenceSpace = renderer.xr.getReferenceSpace();
+                const session = renderer.xr.getSession();
 
-                // Update Telemetry Status Dashboard Badges
-                if (stateM1) {
-                    badge1.textContent = "Point A (Hiro): LOCKED";
-                    badge1.className = "status-badge active";
-                } else {
-                    badge1.textContent = "Point A (Hiro): LOST";
-                    badge1.className = "status-badge missing";
+                // Solicitar origen de Hit-Test (Rastreo de superficies) si no existe
+                if (hitTestSourceRequested === false) {
+                    session.requestReferenceSpace('viewer').then((viewerSpace) => {
+                        session.requestHitTestSource({ space: viewerSpace }).then((source) => {
+                            hitTestSource = source;
+                        });
+                    });
+
+                    session.addEventListener('end', () => {
+                        hitTestSourceRequested = false;
+                        hitTestSource = null;
+                    });
+
+                    hitTestSourceRequested = true;
                 }
 
-                if (stateM2) {
-                    badge2.textContent = "Point B (Kanji): LOCKED";
-                    badge2.className = "status-badge active";
-                } else {
-                    badge2.textContent = "Point B (Kanji): LOST";
-                    badge2.className = "status-badge missing";
-                }
+                // Si ya tenemos el origen de rastreo de impacto, calculamos la posición
+                if (hitTestSource) {
+                    const hitTestResults = frame.getHitTestResults(hitTestSource);
 
-                // Core Processing Conditional Matrix
-                if (stateM1 && stateM2) {
-                    // Extract exact spatial coordinates relative to the master system coordinates
-                    m1.object3D.getWorldPosition(v1);
-                    m2.object3D.getWorldPosition(v2);
+                    if (hitTestResults.length) {
+                        const hit = hitTestResults[0];
+                        const pose = hit.getPose(referenceSpace);
 
-                    // Compute absolute distance vector length
-                    const computedDistance = v1.distanceTo(v2);
-
-                    // Dynamic Metrics Rendering Structure
-                    if (computedDistance < 1.0) {
-                        display.textContent = `${(computedDistance * 100).toFixed(1)} cm`;
+                        // Si detectamos superficie, mostramos la retícula y ocultamos la mira 2D fija
+                        reticle.visible = true;
+                        reticle.matrix.fromArray(pose.transform.matrix);
+                        reticleGuide.style.display = 'none';
                     } else {
-                        display.textContent = `${computedDistance.toFixed(3)} m`;
+                        // Si se pierde la superficie, dejamos la guía central fija
+                        reticle.visible = false;
+                        reticleGuide.style.display = 'block';
                     }
-
-                    // Vector Overlay Draw Routine
-                    renderDynamic3DVectorLine(v1, v2);
-
-                } else {
-                    display.textContent = "SCANNING SPACE...";
-                    clearDynamicVectorLine();
                 }
             }
 
-            /**
-             * Generates a structural 3D vector connector line between active coordinates
-             */
-${endPoint.x} ${endPoint.y} ${endPoint.z},color: '#00f3ff',opacity: 0.8});currentLineObj = lineEntity;lineContainer.appendChild(lineEntity);}/*** Flushes unused geometry components out of memory allocation*/function clearDynamicVectorLine() {if (currentLineObj) {lineContainer.removeChild(currentLineObj);currentLineObj = null;}}// Set Engine Execution to 60 Hertz Processing cycle ratesetInterval(spatialCalculationEngine, 16.67);});
-            function renderDynamic3DVectorLine(startPoint, endPoint) {
-                clearDynamicVectorLine();
-
-                // Build modern 3D line geometry component
-                const lineEntity = document.createElement('a-entity');
-                
-                // Construct A-Frame native line tracking object parameters
-                lineEntity.setAttribute('line', {
-                    start: `${startPoint.x} ${startPoint.y} ${startPoint.z}`,
-
-</script>
+            renderer.render(scene, camera);
+        }
+    </script>
 </body>
 </html>
