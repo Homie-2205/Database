@@ -2,195 +2,306 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Regla Web AR por Botones</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Regla Web AR - Profesional</title>
+    
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body style="margin: 0; overflow: hidden;">
 
-    <div id="ui-container">
-        <h2>Regla AR Profesional</h2>
-        <p id="status">Ubícate en el inicio y presiona "Punto A"</p>
+    <style>
+        /* --- ESTILOS GENERALES Y RESETS --- */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
         
-        <div id="distance-display">
-            Distancia: <span id="distance-value">0.00</span> m
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* --- MIRA CENTRAL (LÍNEAS DELGADAS VERDES) --- */
+        /* Línea Horizontal */
+        .reticle-h {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60px;
+            height: 2px;
+            background-color: #34c759;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+            pointer-events: none; /* No interfiere con los clics */
+            opacity: 0.8;
+        }
+        /* Línea Vertical */
+        .reticle-v {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 60px;
+            background-color: #34c759;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+        /* Círculo central opcional para mayor precisión */
+        .reticle-c {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            border: 2px solid #34c759;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        /* --- INTERFAZ DE USUARIO (PANEL INFERIOR) --- */
+        #bottom-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 80%, rgba(0,0,0,0.7) 100%);
+            z-index: 1000;
+            padding: 20px 24px 35px 24px;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.5);
+        }
+
+        /* Indicador superior de estado / instrucciones */
+        #status-bar {
+            width: 100%;
+            background-color: #25a845;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            transition: background 0.3s ease;
+        }
+
+        #status-bar.waiting {
+            background-color: #0a84ff;
+        }
+
+        /* Fila de datos y control principal */
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* Botón de acción principal */
+        .main-btn {
+            flex: 1;
+            background-color: #34c759;
+            border: none;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .main-btn:active {
+            transform: scale(0.97);
+        }
+
+        .main-btn:disabled {
+            background-color: #3a3a3c;
+            color: #8e8e93;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* Visualizador de la distancia medida */
+        .display-container {
+            flex: 1;
+            background-color: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 12px 20px;
+            border-radius: 14px;
+            text-align: right;
+        }
+
+        .display-container .label {
+            display: block;
+            font-size: 0.75rem;
+            color: #8e8e93;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .display-container .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            font-family: monospace;
+        }
+
+        /* Botón secundario para reiniciar */
+        #reset-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid rgba(255, 69, 58, 0.6);
+            color: #ff453a;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #reset-btn:stretch {
+            background-color: rgba(255, 69, 58, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="reticle-h"></div>
+    <div class="reticle-v"></div>
+    <div class="reticle-c"></div>
+
+    <div id="bottom-panel">
+        <div id="status-bar" class="waiting">Apunta al origen con la cruz y fija el Punto A</div>
+        
+        <div class="control-row">
+            <button id="action-btn" class="main-btn">Punto A</button>
+            <div class="display-container">
+                <span class="label">Distancia</span>
+                <span class="value" id="distance-value">0.00 m</span>
+            </div>
         </div>
-        
-        <div class="btn-group">
-            <button id="btn-A" class="action-btn">Fijar Punto A</button>
-            <button id="btn-B" class="action-btn" disabled>Fijar Punto B</button>
-        </div>
-        
-        <button id="reset-btn">Reiniciar Medición</button>
+
+        <button id="reset-btn">Reiniciar regla</button>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        <a-entity id="marker-A" geometry="primitive: sphere; radius: 0.03" material="color: #ff3b30;" visible="false"></a-entity>
-        <a-entity id="marker-B" geometry="primitive: sphere; radius: 0.03" material="color: #34c759;" visible="false"></a-entity>
-        <a-entity id="line-AB" line="color: #ffcc00; start: 0 0 0; end: 0 0 0" visible="false"></a-entity>
+    <a-scene 
+        embedded 
+        arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
+        renderer="logarithmicDepthBuffer: true; colorManagement: true;">
+        
+        <a-entity id="marker-A" geometry="primitive: sphere; radius: 0.02" material="color: #ff3b30; roughness: 0.3;" visible="false"></a-entity>
+        <a-entity id="marker-B" geometry="primitive: sphere; radius: 0.02" material="color: #34c759; roughness: 0.3;" visible="false"></a-entity>
+        
+        <a-entity id="line-AB" line="color: #34c759; start: 0 0 0; end: 0 0 0" visible="false"></a-entity>
 
-        <a-entity camera id="main-camera" look-controls></a-entity>
+        <a-entity camera id="ar-camera" look-controls></a-entity>
     </a-scene>
-<style>  #ui-container {
-    position: absolute;
-    bottom: 30px; /* Movido abajo para que sea más ergonómico en celulares */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 100;
-    background: rgba(20, 20, 20, 0.85);
-    backdrop-filter: blur(5px);
-    color: white;
-    padding: 20px;
-    border-radius: 20px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    text-align: center;
-    width: 85%;
-    max-width: 360px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-}
 
-#ui-container h2 {
-    margin: 0 0 5px 0;
-    font-size: 1.1rem;
-    letter-spacing: 1px;
-    color: #0a84ff;
-}
+    <script>
+        // Coordenadas espaciales de los puntos marcados
+        let coordA = null;
+        let coordB = null;
 
-#status {
-    margin: 5px 0 15px 0;
-    font-size: 0.85rem;
-    color: #eaeaea;
-}
+        // Referencias de los elementos del DOM (Interfaz)
+        const statusBar = document.getElementById('status-bar');
+        const actionBtn = document.getElementById('action-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const distanceDisplay = document.getElementById('distance-value');
 
-#distance-display {
-    font-size: 1.8rem;
-    font-weight: bold;
-    margin-bottom: 15px;
-    color: #34c759;
-}
+        // Referencias de los objetos de la escena 3D
+        const markerA = document.getElementById('marker-A');
+        const markerB = document.getElementById('marker-B');
+        const lineAB = document.getElementById('line-AB');
+        const cameraEntity = document.getElementById('ar-camera');
 
-.btn-group {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
+        // Escucha de acción del botón principal (Alterna entre Punto A y Punto B)
+        actionBtn.addEventListener('click', () => {
+            // Se extrae la matriz de posición del sensor/cámara web
+            const cameraTransform = cameraEntity.object3D.position;
 
-.action-btn {
-    flex: 1;
-    background: #0a84ff;
-    border: none;
-    color: white;
-    padding: 12px 10px;
-    border-radius: 10px;
-    font-weight: bold;
-    font-size: 0.9rem;
-    cursor: pointer;
-}
+            // Se calcula un vector de proyección hacia el frente del teléfono
+            const directionVector = new THREE.Vector3();
+            cameraEntity.object3D.getWorldDirection(directionVector);
 
-.action-btn:disabled {
-    background: #555;
-    color: #888;
-    cursor: not-allowed;
-}
+            // Fijamos el punto a 0.6 metros al frente de donde mira el terminal
+            const calculatedPosition = {
+                x: cameraTransform.x - (directionVector.x * 0.6),
+                y: cameraTransform.y - (directionVector.y * 0.6),
+                z: cameraTransform.z - (directionVector.z * 0.6)
+            };
 
-#btn-B {
-    background: #30d158;
-}
+            if (!coordA) {
+                // CASO 1: Guardar el Punto A
+                coordA = calculatedPosition;
+                
+                markerA.setAttribute('position', `${coordA.x} ${coordA.y} ${coordA.z}`);
+                markerA.setAttribute('visible', 'true');
+                
+                // Actualizar interfaz para el Punto B
+                actionBtn.innerText = "Punto B";
+                statusBar.classList.remove('waiting');
+                statusBar.innerText = "Desplázate al objetivo y fija el Punto B";
+            } 
+            else if (!coordB) {
+                // CASO 2: Guardar el Punto B y procesar resultado
+                coordB = calculatedPosition;
+                
+                markerB.setAttribute('position', `${coordB.x} ${coordB.y} ${coordB.z}`);
+                markerB.setAttribute('visible', 'true');
 
-#btn-B:disabled {
-    background: #225530;
-    color: #666;
-}
+                // Renderizar vector o línea geométrica entre ambos puntos
+                lineAB.setAttribute('line', {
+                    start: `${coordA.x} ${coordA.y} ${coordA.z}`,
+                    end: `${coordB.x} ${coordB.y} ${coordB.z}`
+                });
+                lineAB.setAttribute('visible', 'true');
 
-#reset-btn {
-    background: transparent;
-    border: 1px solid #ff453a;
-    color: #ff453a;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    width: 100%;
-}</style>
-    <script>   let posA = null;
-let posB = null;
+                // Aplicación de la ecuación de distancia euclidiana espacial
+                const resultDistance = Math.sqrt(
+                    Math.pow(coordB.x - coordA.x, 2) +
+                    Math.pow(coordB.y - coordA.y, 2) +
+                    Math.pow(coordB.z - coordA.z, 2)
+                );
 
-// Elementos de la interfaz (UI)
-const btnA = document.getElementById('btn-A');
-const btnB = document.getElementById('btn-B');
-const resetBtn = document.getElementById('reset-btn');
-const statusText = document.getElementById('status');
-const distanceValue = document.getElementById('distance-value');
+                // Imprimir el resultado en pantalla en metros
+                distanceDisplay.innerText = `${resultDistance.toFixed(2)} m`;
+                actionBtn.disabled = true;
+                statusBar.innerText = "Medición finalizada correctamente";
+            }
+        });
 
-// Elementos 3D de la escena
-const markerA = document.getElementById('marker-A');
-const markerB = document.getElementById('marker-B');
-const lineAB = document.getElementById('line-AB');
-const cameraEl = document.getElementById('main-camera');
+        // Evento de restauración/reinicio de variables
+        resetBtn.addEventListener('click', () => {
+            coordA = null;
+            coordB = null;
 
-// BOTÓN A: Guarda la posición inicial
-btnA.addEventListener('click', () => {
-    // Captura la posición de la cámara en el mundo 3D
-    const camPos = cameraEl.object3D.position;
-    
-    posA = { x: camPos.x, y: camPos.y, z: camPos.z };
-    
-    // Coloca la esfera roja en esa posición
-    markerA.setAttribute('position', `${posA.x} ${posA.y} ${posA.z}`);
-    markerA.setAttribute('visible', 'true');
-    
-    // Cambia estados de la interfaz
-    btnA.disabled = true;
-    btnB.disabled = false;
-    statusText.innerText = "Punto A guardado. Camina hacia el final y presiona 'Punto B'";
-});
+            // Ocultar objetos espaciales 3D
+            markerA.setAttribute('visible', 'false');
+            markerB.setAttribute('visible', 'false');
+            lineAB.setAttribute('visible', 'false');
 
-// BOTÓN B: Guarda la posición final y calcula
-btnB.addEventListener('click', () => {
-    if (!posA) return;
-
-    const camPos = cameraEl.object3D.position;
-    posB = { x: camPos.x, y: camPos.y, z: camPos.z };
-    
-    // Coloca la esfera verde
-    markerB.setAttribute('position', `${posB.x} ${posB.y} ${posB.z}`);
-    markerB.setAttribute('visible', 'true');
-    
-    // Dibuja la línea entre los dos puntos
-    lineAB.setAttribute('line', {
-        start: `${posA.x} ${posA.y} ${posA.z}`,
-        end: `${posB.x} ${posB.y} ${posB.z}`
-    });
-    lineAB.setAttribute('visible', 'true');
-    
-    // Calcula la distancia matemática 3D
-    const distance = Math.sqrt(
-        Math.pow(posB.x - posA.x, 2) +
-        Math.pow(posB.y - posA.y, 2) +
-        Math.pow(posB.z - posA.z, 2)
-    );
-    
-    // Muestra el resultado
-    distanceValue.innerText = distance.toFixed(2);
-    btnB.disabled = true;
-    statusText.innerText = "Medición realizada con éxito.";
-});
-
-// BOTÓN REINICIAR
-resetBtn.addEventListener('click', () => {
-    posA = null;
-    posB = null;
-    
-    markerA.setAttribute('visible', 'false');
-    markerB.setAttribute('visible', 'false');
-    lineAB.setAttribute('visible', 'false');
-    
-    distanceValue.innerText = "0.00";
-    btnA.disabled = false;
-    btnB.disabled = true;
-    statusText.innerText = "Ubícate en el inicio y presiona 'Punto A'";
-});</script>
+            // Resetear textos y botones de la UI
+            distanceDisplay.innerText = "0.00 m";
+            actionBtn.innerText = "Punto A";
+            actionBtn.disabled = false;
+            statusBar.classList.add('waiting');
+            statusBar.innerText = "Apunta al origen con la cruz y fija el Punto A";
+        });
+    </script>
 </body>
 </html>
