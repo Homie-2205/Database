@@ -153,14 +153,60 @@ function onSelect(){
 
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
-        const line = new THREE.Line(
-            geometry,
-            new THREE.LineBasicMaterial({ color: 0x00ff00 })
-        );
 
-        scene.add(line);
+const line = new THREE.Line(
+    geometry,
+    new THREE.LineBasicMaterial({ color: 0x00ff00 })
+);
 
-        points = [];
+scene.add(line);
+
+// ===== Texto con la distancia en centímetros =====
+const cm = Math.round(d * 100);
+
+const canvas = document.createElement("canvas");
+canvas.width = 512;
+canvas.height = 128;
+
+const ctx = canvas.getContext("2d");
+ctx.fillStyle = "rgba(0,0,0,0.4)";
+ctx.fillRect(0,0,512,128);
+
+ctx.font = "60px Arial";
+ctx.fillStyle = "#00ff00";
+ctx.textAlign = "center";
+ctx.fillText(cm + " cm", 256, 80);
+
+const texture = new THREE.CanvasTexture(canvas);
+
+const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true
+    })
+);
+
+sprite.scale.set(0.15, 0.04, 1);
+
+// Colocar el texto en el punto medio de la línea
+const midpoint = new THREE.Vector3()
+    .addVectors(points[0], points[1])
+    .multiplyScalar(0.5);
+
+sprite.position.copy(midpoint);
+
+scene.add(sprite);
+
+points = [];
+
+
+
+
+
+
+
+
+
     }
 }
 
