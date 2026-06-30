@@ -209,13 +209,19 @@ points = [];
 
     }
 }
-
 function render(){
-    // Rotate all placed markers
+
     const time = Date.now() * 0.003;
+
     rotatingMarkers.forEach(marker => {
-        marker.rotation.z = time; // Spinning animation
-        marker.lookAt(camera); // Faces the camera so it is always visible
+        marker.rotation.z = time;
+        marker.lookAt(camera.position);
+    });
+
+    scene.traverse((obj) => {
+        if (obj.isSprite) {
+            obj.lookAt(camera.position);
+        }
     });
 
     renderer.render(scene, camera);
