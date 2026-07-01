@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Control Demo</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    background:white;
+    transition:0.5s;
+}
+
+#box{
+    width:250px;
+    height:250px;
+    background:gray;
+    border-radius:20px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:white;
+    font-size:28px;
+    text-align:center;
+}
+
+button{
+    position:fixed;
+    top:20px;
+    left:20px;
+    padding:12px 20px;
+    font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<button id="start">🎤 Start Listening</button>
+
+<div id="box">
+Say:<br>
+Red, Green,<br>
+Blue or Hello
+</div>
+
+<script>
+
+const SpeechRecognition =
+window.SpeechRecognition ||
+window.webkitSpeechRecognition;
+
+const recognition = new SpeechRecognition();
+
+recognition.lang = "en-US";
+recognition.continuous = true;
+recognition.interimResults = false;
+
+const box = document.getElementById("box");
+
+document.getElementById("start").onclick = () => {
+    recognition.start();
+};
+
+recognition.onresult = (event)=>{
+
+    let text =
+    event.results[event.results.length-1][0].transcript
+    .toLowerCase();
+
+    box.innerHTML = text;
+
+    if(text.includes("red")){
+        document.body.style.background="red";
+    }
+
+    if(text.includes("green")){
+        document.body.style.background="green";
+    }
+
+    if(text.includes("blue")){
+        document.body.style.background="blue";
+    }
+
+    if(text.includes("hello")){
+        box.style.background="orange";
+        box.innerHTML="Hello Human!";
+    }
+
+};
+
+recognition.onerror=(e)=>{
+    console.log(e);
+};
+
+</script>
+
+</body>
+</html>
