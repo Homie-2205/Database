@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asistente por Voz</title>
+
+<style>
+body{
+    margin:0;
+    background:#1b1b1b;
+    color:white;
+    font-family:Arial,sans-serif;
+    text-align:center;
+}
+
+h1{
+    margin-top:30px;
+}
+
+#estado{
+    font-size:22px;
+    margin:20px;
+    color:#00ff99;
+}
+
+#texto{
+    width:90%;
+    max-width:700px;
+    margin:auto;
+    background:#2b2b2b;
+    padding:20px;
+    border-radius:10px;
+    min-height:120px;
+}
+
+button{
+    margin-top:25px;
+    padding:15px 30px;
+    font-size:20px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Asistente por Voz</h1>
+
+<div id="estado">Presiona el botón</div>
+
+<div id="texto">
+Esperando...
+</div>
+
+<button onclick="iniciar()">🎤 Hablar</button>
+
+<script>
+
+const SpeechRecognition =
+window.SpeechRecognition ||
+window.webkitSpeechRecognition;
+
+const reconocimiento = new SpeechRecognition();
+
+reconocimiento.lang="es-ES";
+reconocimiento.continuous=false;
+reconocimiento.interimResults=false;
+
+function hablar(texto){
+
+document.getElementById("texto").innerHTML="<b>Asistente:</b> "+texto;
+
+let voz=new SpeechSynthesisUtterance(texto);
+voz.lang="es-ES";
+speechSynthesis.speak(voz);
+
+}
+
+function iniciar(){
+
+document.getElementById("estado").innerHTML="Escuchando...";
+reconocimiento.start();
+
+}
+
+reconocimiento.onresult=function(e){
+
+let comando=e.results[0][0].transcript.toLowerCase();
+
+document.getElementById("texto").innerHTML="<b>Tú:</b> "+comando;
+
+if(comando.includes("hola")){
+
+hablar("Hola. Mucho gusto. ¿Cómo puedo ayudarte?");
+
+}
+
+else if(comando.includes("qué hora") || comando.includes("hora")){
+
+let ahora=new Date();
+
+let hora=ahora.toLocaleTimeString("es-ES");
+
+hablar("La hora actual es "+hora);
+
+}
+
+else if(comando.includes("fecha")){
+
+let hoy=new Date();
+
+let fecha=hoy.toLocaleDateString("es-ES",{
+weekday:"long",
+day:"numeric",
+month:"long",
+year:"numeric"
+});
+
+hablar("Hoy es "+fecha);
+
+}
+
+else if(comando.includes("día")){
+
+let dias=["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+
+let hoy=new Date();
+
+hablar("Hoy es "+dias[hoy.getDay()]);
+
+}
+
+else if(comando.includes("año")){
+
+hablar("Estamos en el año "+new Date().getFullYear());
+
+}
+
+else if(comando.includes("cómo estás")){
+
+hablar("Estoy muy bien. Gracias por preguntar.");
+
+}
+
+else if(comando.includes("buenos días")){
+
+hablar("Buenos días. Espero que tengas un excelente día.");
+
+}
+
+else if(comando.includes("buenas tardes")){
+
+hablar("Buenas tardes.");
+
+}
+
+else if(comando.includes("buenas noches")){
+
+hablar("Buenas noches.");
+
+}
+
+else if(comando.includes("gracias")){
+
+hablar("Con mucho gusto.");
+
+}
+
+else if(comando.includes("adiós")){
+
+hablar("Hasta luego. Que tengas un excelente día.");
+
+}
+
+else if(comando.includes("tu nombre")){
+
+hablar("Soy tu asistente de voz creado con HTML y JavaScript.");
+
+}
+
+else if(comando.includes("clima")){
+
+hablar("Para mostrar el clima real debes conectar una API meteorológica.");
+
+}
+
+else if(comando.includes("noticias")){
+
+hablar("Para mostrar noticias reales debes conectar una API de noticias.");
+
+}
+
+else{
+
+hablar("Lo siento. No entendí ese comando.");
+
+}
+
+};
+
+reconocimiento.onend=function(){
+
+document.getElementById("estado").innerHTML="Pulsa Hablar nuevamente";
+
+};
+
+</script>
+
+</body>
+</html>
