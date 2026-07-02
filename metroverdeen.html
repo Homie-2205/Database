@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10 Meter AR Ruler Santa Elena</title>
+
+<style>
+html, body{
+    margin:0;
+    overflow:hidden;
+    font-family:Arial,sans-serif;
+    background:#000;
+}
+
+#overlay{
+    position:absolute;
+    top:10px;
+    left:10px;
+    z-index:10;
+    color:white;
+    background:rgba(0,0,0,.6);
+    padding:10px;
+    border-radius:10px;
+}
+
+button{
+    padding:10px 18px;
+    font-size:16px;
+    margin-top:10px;
+    cursor:pointer;
+}
+
+#distance{
+    margin-top:10px;
+    font-size:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="overlay">
+<h2>10 Meter WebXR Ruler Santa Elena</h2>
+<p>Tap two points in AR.</p>
+<div id="distance">Distance: 0.00 m</div>
+<button id="startAR">Start AR</button>
+</div>
+
+<script type="module">
+
+import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+import { ARButton } from "https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js";
+
+let camera, scene, renderer;
+let controller;
+let points = [];
+let rotatingMarkers = []; // Array to hold markers that need to spin
+
+init();
+
+async function init(){
+
+    if(!navigator.xr){
+        alert("WebXR is not supported.");
+        return;
+    }
+
+    const supported = await navigator.xr.isSessionSupported("immersive-ar");
+
+    if(!supported){
+        alert("Immersive AR is not supported on this device.");
+        return;
+    }
+
+    scene = new THREE.Scene();
+
+    camera = new THREE.PerspectiveCamera(
+        70,
+        window.innerWidth / window.innerHeight,
+        0.01,
+        20
+    );
+
+    renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true
+    });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+
+    document.body.appendChild(renderer.domElement);
+
+    controller = renderer.xr.getController(0);
+    controller.addEventListener("select", onSelect);
+    scene.add(controller);
+
+    document.getElementById("startAR").onclick = () => {
+        document.body.appendChild(
+            ARButton.createButton(renderer, {
+                requiredFeatures: ["hit-test"]
+            })
+        );
+    };
+
+    renderer.setAnimationLoop(render);
+}
+
+function onSelect(){
+
+    const p = new THREE.Vector3();
+    controller.getWorldPosition(p);
+
+    points.push(p);
+
+    // Create a group to handle the spinning and camera orientation
+    const markerGroup = new THREE.Group();
+    markerGroup.position.copy(p);
+
+    // Green color for the divided circle
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+
+    // Divide the circle into 5 parts (5 segments)
+    const segments = 5;
+    const radius = 0.002; 
+    const tubeRadius = 0.0006; // Thickness of the ring
+
+    for (let i = 0; i < segments; i++) {
+        // Start and end angle for each slice
+        const thetaStart = (i * 2 * Math.PI) / segments;
+        const thetaLength = (1.5 * Math.PI) / segments; // Slightly shorter to create a gap/division
+
+        const geometry = new THREE.TorusGeometry(radius, tubeRadius, 8, 24, thetaLength);
+        const mesh = new THREE.Mesh(geometry, material);
+
+        // Rotate the segment so it forms a full circle
+        mesh.rotation.z = thetaStart;
+        markerGroup.add(mesh);
+    }
+
+    scene.add(markerGroup);
+
+    // Save to our array so we can spin it in the render loop
+    rotatingMarkers.push(markerGroup);
+
+    if(points.length == 2){
+
+        const d = points[0].distanceTo(points[1]);
+
+        document.getElementById("distance").innerHTML =
+            "Distance: " + d.toFixed(2) + " m";
+
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+
+const line = new THREE.Line(
+    geometry,
+    new THREE.LineBasicMaterial({ color: 0x00ff00 })
+);
+
+scene.add(line);
+
+// ===== Texto con la distancia en centímetros =====
+const cm = Math.round(d * 100);
+
+const canvas = document.createElement("canvas");
+canvas.width = 512;
+canvas.height = 128;
+
+const ctx = canvas.getContext("2d");
+ctx.fillStyle = "rgba(0,0,0,0.4)";
+ctx.fillRect(0,0,512,128);
+
+ctx.font = "60px Arial";
+ctx.fillStyle = "#00ff00";
+ctx.textAlign = "center";
+ctx.fillText(cm + " cm", 256, 80);
+
+const texture = new THREE.CanvasTexture(canvas);
+
+const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true
+    })
+);
+
+sprite.scale.set(0.15, 0.04, 1);
+
+// Colocar el texto en el punto medio de la línea
+const midpoint = new THREE.Vector3()
+    .addVectors(points[0], points[1])
+    .multiplyScalar(0.5);
+
+sprite.position.copy(midpoint);
+
+scene.add(sprite);
+
+points = [];
+
+
+
+
+
+
+
+
+
+    }
+}
+function render(){
+
+    const time = Date.now() * 0.003;
+
+    rotatingMarkers.forEach(marker => {
+        marker.rotation.z = time;
+        marker.lookAt(camera.position);
+    });
+
+    scene.traverse((obj) => {
+        if (obj.isSprite) {
+            obj.lookAt(camera.position);
+        }
+    });
+
+    renderer.render(scene, camera);
+}
+
+</script>
+
+</body>
+</html>
