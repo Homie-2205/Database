@@ -3,102 +3,145 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Edge Detection</title>
+<title>Detección de Bordes en Tiempo Real</title>
 
 <style>
 body{
-    font-family: Arial, sans-serif;
-    background:#202124;
-    color:white;
-    text-align:center;
     margin:0;
-    padding:20px;
+    background:#111;
+    color:white;
+    font-family:Arial,sans-serif;
+    text-align:center;
 }
 
-h1{
+h2{
     color:#00ff88;
 }
 
-canvas{
-    border:2px solid #00ff88;
-    margin-top:20px;
-    max-width:90%;
+video{
+    display:none;
 }
 
-input{
-    margin-top:20px;
+canvas{
+    width:95%;
+    max-width:900px;
+    border:3px solid #00ff88;
+    margin-top:15px;
+}
+
+button{
+    margin:15px;
+    padding:12px 25px;
+    font-size:18px;
+    border:none;
+    border-radius:8px;
+    background:#00aa55;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#00cc66;
 }
 </style>
+
+<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+
 </head>
+
 <body>
 
-<h1>Detección de Bordes (Edge Detection)</h1>
+<h2>Edge Detection - Cámara en Tiempo Real</h2>
 
-<input type="file" id="upload">
+<button onclick="iniciarCamara()">Iniciar Cámara</button>
 
 <br>
+
+<video id="video" autoplay playsinline></video>
 
 <canvas id="canvas"></canvas>
 
 <script>
 
-const upload=document.getElementById("upload");
+const video=document.getElementById("video");
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
 
-upload.addEventListener("change",function(e){
+async function iniciarCamara(){
 
-const file=e.target.files[0];
-
-const img=new Image();
-
-img.onload=function(){
-
-canvas.width=img.width;
-canvas.height=img.height;
-
-ctx.drawImage(img,0,0);
-
-let imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-
-let data=imageData.data;
-
-let output=new Uint8ClampedArray(data);
-
-for(let y=1;y<canvas.height-1;y++){
-
-for(let x=1;x<canvas.width-1;x++){
-
-let i=(y*canvas.width+x)*4;
-
-let left=((y*canvas.width+(x-1))*4);
-let right=((y*canvas.width+(x+1))*4);
-let top=(((y-1)*canvas.width+x)*4);
-let bottom=(((y+1)*canvas.width+x)*4);
-
-let gx=Math.abs(data[right]-data[left]);
-let gy=Math.abs(data[bottom]-data[top]);
-
-let edge=gx+gy;
-
-output[i]=edge;
-output[i+1]=edge;
-output[i+2]=edge;
-output[i+3]=255;
-
-}
-
-}
-
-imageData.data.set(output);
-
-ctx.putImageData(imageData,0,0);
-
-}
-
-img.src=URL.createObjectURL(file);
-
+const stream=await navigator.mediaDevices.getUserMedia({
+video:{
+facingMode:"environment"
+},
+audio:false
 });
+
+video.srcObject=stream;
+
+video.onloadedmetadata=function(){
+
+video.play();
+
+esperarOpenCV();
+
+}
+
+}
+
+function esperarOpenCV(){
+
+if(typeof cv==="undefined"){
+
+setTimeout(esperarOpenCV,100);
+
+return;
+
+}
+
+procesar();
+
+}
+
+function procesar(){
+
+canvas.width=video.videoWidth;
+canvas.height=video.videoHeight;
+
+let src=new cv.Mat(video.videoHeight,video.videoWidth,cv.CV_8UC4);
+let gray=new cv.Mat();
+let edges=new cv.Mat();
+
+let cap=new cv.VideoCapture(video);
+
+function actualizar(){
+
+cap.read(src);
+
+cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+
+cv.GaussianBlur(
+gray,
+gray,
+new cv.Size(5,5),
+0
+);
+
+cv.Canny(
+gray,
+edges,
+60,
+150
+);
+
+cv.imshow("canvas",edges);
+
+requestAnimationFrame(actualizar);
+
+}
+
+actualizar();
+
+}
 
 </script>
 
