@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebAR Edge Detection</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#000;
+    overflow:hidden;
+    font-family:Arial,sans-serif;
+}
+
+video,canvas{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100vw;
+    height:100vh;
+    object-fit:cover;
+}
+
+#info{
+    position:absolute;
+    top:15px;
+    left:15px;
+    color:white;
+    background:rgba(0,0,0,.6);
+    padding:10px;
+    border-radius:10px;
+    z-index:10;
+}
+</style>
+
+</head>
+<body>
+
+<div id="info">
+<h3>WebAR Edge Detection</h3>
+<p>Point the camera at any object.</p>
+</div>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+
+<script>
+
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d",{willReadFrequently:true});
+
+navigator.mediaDevices.getUserMedia({
+video:{
+facingMode:"environment"
+}
+})
+.then(stream=>{
+video.srcObject=stream;
+video.play();
+requestAnimationFrame(draw);
+})
+.catch(err=>{
+alert("Camera error: "+err);
+});
+
+function draw(){
+
+canvas.width=video.videoWidth;
+canvas.height=video.videoHeight;
+
+ctx.drawImage(video,0,0);
+
+let frame=ctx.getImageData(0,0,canvas.width,canvas.height);
+
+let d=frame.data;
+let w=canvas.width;
+let h=canvas.height;
+
+let gray=new Uint8ClampedArray(w*h);
+
+for(let i=0;i<gray.length;i++){
+
+let j=i*4;
+
+gray[i]=
+0.299*d[j]+
+0.587*d[j+1]+
+0.114*d[j+2];
+
+}
+
+let out=ctx.createImageData(w,h);
+
+for(let y=1;y<h-1;y++){
+
+for(let x=1;x<w-1;x++){
+
+let i=y*w+x;
+
+let gx=
+-gray[i-w-1]-2*gray[i-1]-gray[i+w-1]
++gray[i-w+1]+2*gray[i+1]+gray[i+w+1];
+
+let gy=
+-gray[i-w-1]-2*gray[i-w]-gray[i-w+1]
++gray[i+w-1]+2*gray[i+w]+gray[i+w+1];
+
+let mag=Math.sqrt(gx*gx+gy*gy);
+
+let edge=mag>120?255:0;
+
+let j=i*4;
+
+out.data[j]=edge;
+out.data[j+1]=255;
+out.data[j+2]=0;
+out.data[j+3]=255;
+
+}
+
+}
+
+ctx.putImageData(out,0,0);
+
+requestAnimationFrame(draw);
+
+}
+
+</script>
+
+</body>
+</html>
