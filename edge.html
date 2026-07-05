@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real-Time Edge Detection</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+background:#000;
+font-family:Arial,sans-serif;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+overflow:hidden;
+}
+
+video{
+display:none;
+}
+
+canvas{
+width:100vw;
+height:100vh;
+object-fit:cover;
+}
+
+button{
+position:fixed;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+padding:15px 30px;
+font-size:18px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+background:#00cc66;
+color:white;
+z-index:100;
+}
+</style>
+
+</head>
+<body>
+
+<video id="video" autoplay playsinline></video>
+
+<canvas id="canvas"></canvas>
+
+<button onclick="startCamera()">Start Camera</button>
+
+<script>
+
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+async function startCamera(){
+
+try{
+
+const stream=await navigator.mediaDevices.getUserMedia({
+video:{
+facingMode:"environment"
+},
+audio:false
+});
+
+video.srcObject=stream;
+
+video.onloadedmetadata=()=>{
+
+canvas.width=video.videoWidth;
+canvas.height=video.videoHeight;
+
+requestAnimationFrame(draw);
+
+};
+
+}catch(e){
+
+alert("Camera Error: "+e.message);
+
+}
+
+}
+
+function draw(){
+
+ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+let frame=ctx.getImageData(0,0,canvas.width,canvas.height);
+
+let d=frame.data;
+
+let gray=new Uint8Array(canvas.width*canvas.height);
+
+for(let i=0,j=0;i<d.length;i+=4,j++){
+
+gray[j]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+
+}
+
+for(let y=1;y<canvas.height-1;y++){
+
+for(let x=1;x<canvas.width-1;x++){
+
+let i=y*canvas.width+x;
+
+let gx=
+
+-gray[i-canvas.width-1]
+-2*gray[i-1]
+-gray[i+canvas.width-1]
++gray[i-canvas.width+1]
++2*gray[i+1]
++gray[i+canvas.width+1];
+
+let gy=
+
+-gray[i-canvas.width-1]
+-2*gray[i-canvas.width]
+-gray[i-canvas.width+1]
++gray[i+canvas.width-1]
++2*gray[i+canvas.width]
++gray[i+canvas.width+1];
+
+let edge=Math.sqrt(gx*gx+gy*gy);
+
+let color=edge>120?255:0;
+
+let p=i*4;
+
+d[p]=color;
+d[p+1]=color;
+d[p+2]=color;
+
+}
+
+}
+
+ctx.putImageData(frame,0,0);
+
+requestAnimationFrame(draw);
+
+}
+
+</script>
+
+</body>
+</html>
