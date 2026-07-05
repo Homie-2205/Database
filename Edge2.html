@@ -1,139 +1,68 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WebAR Edge Detection</title>
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WebAR Style Edge Detection</title>
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
-
-body{
-    background:#000;
-    overflow:hidden;
-    font-family:Arial,sans-serif;
-}
-
-video,canvas{
-    position:absolute;
-    top:0;
-    left:0;
-    width:100vw;
-    height:100vh;
-    object-fit:cover;
-}
-
-#info{
-    position:absolute;
-    top:15px;
-    left:15px;
-    color:white;
-    background:rgba(0,0,0,.6);
-    padding:10px;
-    border-radius:10px;
-    z-index:10;
-}
+html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:Arial}
+video,canvas{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
+#ui{position:fixed;top:12px;left:12px;color:#fff;background:rgba(0,0,0,.55);padding:10px 14px;border-radius:10px;z-index:2}
 </style>
-
 </head>
 <body>
+<div id="ui">Loading camera...<br>Hold phone still for 5 seconds.</div>
+<video id="v" autoplay playsinline muted></video>
+<canvas id="c"></canvas>
 
-<div id="info">
-<h3>WebAR Edge Detection</h3>
-<p>Point the camera at any object.</p>
-</div>
-
-<video id="video" autoplay playsinline></video>
-<canvas id="canvas"></canvas>
-
+<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
 <script>
+const video=v,canvas=c,ctx=canvas.getContext("2d");
+const ui=document.getElementById("ui");
+let stable=0,lastMotion=Date.now(),outlined=false;
 
-const video=document.getElementById("video");
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d",{willReadFrequently:true});
-
-navigator.mediaDevices.getUserMedia({
-video:{
-facingMode:"environment"
+async function start(){
+ try{
+  const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+  video.srcObject=s;
+  await video.play();
+  requestAnimationFrame(loop);
+ }catch(e){ui.innerHTML="Camera error: "+e;}
 }
-})
-.then(stream=>{
-video.srcObject=stream;
-video.play();
-requestAnimationFrame(draw);
-})
-.catch(err=>{
-alert("Camera error: "+err);
+window.addEventListener("devicemotion",e=>{
+ const a=e.accelerationIncludingGravity;
+ if(!a)return;
+ const m=Math.abs(a.x)+Math.abs(a.y)+Math.abs(a.z);
+ if(m>20){lastMotion=Date.now();outlined=false;}
 });
-
-function draw(){
-
-canvas.width=video.videoWidth;
-canvas.height=video.videoHeight;
-
-ctx.drawImage(video,0,0);
-
-let frame=ctx.getImageData(0,0,canvas.width,canvas.height);
-
-let d=frame.data;
-let w=canvas.width;
-let h=canvas.height;
-
-let gray=new Uint8ClampedArray(w*h);
-
-for(let i=0;i<gray.length;i++){
-
-let j=i*4;
-
-gray[i]=
-0.299*d[j]+
-0.587*d[j+1]+
-0.114*d[j+2];
-
+function loop(){
+ if(video.videoWidth){
+  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+  ctx.drawImage(video,0,0);
+  const sec=((Date.now()-lastMotion)/1000);
+  ui.innerHTML=sec<5?("Hold still: "+(5-sec).toFixed(1)+" s"):"Detecting...";
+  if(sec>=5 && !outlined && window.cv && cv.Mat){
+    outlined=true;
+    detect();
+  }
+ }
+ requestAnimationFrame(loop);
 }
-
-let out=ctx.createImageData(w,h);
-
-for(let y=1;y<h-1;y++){
-
-for(let x=1;x<w-1;x++){
-
-let i=y*w+x;
-
-let gx=
--gray[i-w-1]-2*gray[i-1]-gray[i+w-1]
-+gray[i-w+1]+2*gray[i+1]+gray[i+w+1];
-
-let gy=
--gray[i-w-1]-2*gray[i-w]-gray[i-w+1]
-+gray[i+w-1]+2*gray[i+w]+gray[i+w+1];
-
-let mag=Math.sqrt(gx*gx+gy*gy);
-
-let edge=mag>120?255:0;
-
-let j=i*4;
-
-out.data[j]=edge;
-out.data[j+1]=255;
-out.data[j+2]=0;
-out.data[j+3]=255;
-
+function detect(){
+ let src=cv.imread(canvas);
+ let gray=new cv.Mat();
+ let edges=new cv.Mat();
+ cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+ cv.GaussianBlur(gray,gray,new cv.Size(5,5),0);
+ cv.Canny(gray,edges,60,150);
+ let out=new cv.Mat();
+ cv.cvtColor(edges,out,cv.COLOR_GRAY2RGBA);
+ let img=new ImageData(new Uint8ClampedArray(out.data),out.cols,out.rows);
+ ctx.putImageData(img,0,0);
+ src.delete();gray.delete();edges.delete();out.delete();
+ ui.innerHTML="Contour generated. Move phone to reset.";
 }
-
-}
-
-ctx.putImageData(out,0,0);
-
-requestAnimationFrame(draw);
-
-}
-
+let wait=setInterval(()=>{if(window.cv&&cv.Mat){clearInterval(wait);start();}},200);
 </script>
+</body></html>
 
-</body>
-</html>
