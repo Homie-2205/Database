@@ -49,8 +49,6 @@ button{
 
 
 
-
-
 <script type="module">
 
 import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
@@ -155,66 +153,57 @@ function onSelect(){
         const d = points[0].distanceTo(points[1]);
 
         document.getElementById("distance").innerHTML =
-            "Distance: " + d.toFixed(2) + " m";
+            "Distance: " + (d * 100).toFixed(0) + " cm";
 
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
+        const line = new THREE.Line(
+            geometry,
+            new THREE.LineBasicMaterial({ color: 0x00ff00 })
+        );
 
-const line = new THREE.Line(
-    geometry,
-    new THREE.LineBasicMaterial({ color: 0x00ff00 })
-);
+        scene.add(line);
 
-scene.add(line);
+        // ===== Texto con la distancia en centímetros =====
+        const cm = Math.round(d * 100);
 
-// ===== Texto con la distancia en centímetros =====
-const cm = Math.round(d * 100);
+        const canvas = document.createElement("canvas");
+        canvas.width = 512;
+        canvas.height = 128;
 
-const canvas = document.createElement("canvas");
-canvas.width = 512;
-canvas.height = 128;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "rgba(0,0,0,0.4)";
+        ctx.fillRect(0,0,512,128);
 
-const ctx = canvas.getContext("2d");
-ctx.fillStyle = "rgba(0,0,0,0.4)";
-ctx.fillRect(0,0,512,128);
+        ctx.font = "60px Arial";
+        ctx.fillStyle = "#00ff00";
+        ctx.textAlign = "center";
+        ctx.fillText(cm + " cm", 256, 80);
 
-ctx.font = "60px Arial";
-ctx.fillStyle = "#00ff00";
-ctx.textAlign = "center";
-ctx.fillText(cm + " cm", 256, 80);
+        const texture = new THREE.CanvasTexture(canvas);
 
-const texture = new THREE.CanvasTexture(canvas);
+        const sprite = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true
+            })
+        );
 
-const sprite = new THREE.Sprite(
-    new THREE.SpriteMaterial({
-        map: texture,
-        transparent: true
-    })
-);
+        sprite.scale.set(0.15, 0.04, 1);
 
-sprite.scale.set(0.15, 0.04, 1);
+        // Colocar el texto en el punto medio de la línea
+        const midpoint = new THREE.Vector3()
+            .addVectors(points[0], points[1])
+            .multiplyScalar(0.5);
 
-// Colocar el texto en el punto medio de la línea
-const midpoint = new THREE.Vector3()
-    .addVectors(points[0], points[1])
-    .multiplyScalar(0.5);
+        sprite.position.copy(midpoint);
 
-sprite.position.copy(midpoint);
+        scene.add(sprite);
 
-scene.add(sprite);
-
-points = [];
-
-
-
-
-
-
-
-
-
+        points = []; // Reiniciar puntos para medir de nuevo
     }
 }
+
 function render(){
 
     const time = Date.now() * 0.003;
@@ -230,13 +219,15 @@ function render(){
         }
     });
 
-    // Nuevo: Si ya se marcó el primer punto pero aún no el segundo, calcula la distancia dinámica en cm
+    // CORRECCIÓN: Si ya se marcó el 1er punto, calculamos la distancia dinámica al puntero del usuario
     if (points.length === 1 && controller) {
         const currentPos = new THREE.Vector3();
-        controller.getWorldPosition(currentPos);
-        const dynamicDistance = points[0].distanceTo(currentPos);
+        // Obtenemos la posición desde la matriz del controlador
+        currentPos.setFromMatrixPosition(controller.matrixWorld); 
         
-        // Suma de 1cm en 1cm en tiempo real en la interfaz superior
+        const dynamicDistance = points[0].distanceTo(currentPos);
+
+        // Suma en tiempo real expresada en enteros de cm
         const dynamicCm = Math.round(dynamicDistance * 100);
         document.getElementById("distance").innerHTML = "Distance: " + dynamicCm + " cm";
     }
@@ -245,5 +236,8 @@ function render(){
 }
 
 </script>
+
+
+
 </body>
 </html>
