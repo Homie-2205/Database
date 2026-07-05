@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebXR AR Punto Fijo</title>
+
+<style>
+body{
+    margin:0;
+    overflow:hidden;
+    font-family:Arial,sans-serif;
+}
+
+#info{
+    position:absolute;
+    top:20px;
+    left:20px;
+    color:white;
+    background:rgba(0,0,0,.5);
+    padding:10px;
+    border-radius:8px;
+    z-index:100;
+}
+</style>
+</head>
+
+<body>
+
+<div id="info">
+Toca la pantalla para colocar un punto.
+</div>
+
+<script type="module">
+
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js';
+import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/webxr/ARButton.js';
+
+let camera, scene, renderer;
+let controller;
+
+init();
+
+function init(){
+
+scene=new THREE.Scene();
+
+camera=new THREE.PerspectiveCamera(
+70,
+window.innerWidth/window.innerHeight,
+0.01,
+20
+);
+
+renderer=new THREE.WebGLRenderer({
+antialias:true,
+alpha:true
+});
+
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.xr.enabled=true;
+
+document.body.appendChild(renderer.domElement);
+
+document.body.appendChild(
+ARButton.createButton(renderer,{
+requiredFeatures:['hit-test']
+})
+);
+
+const light=new THREE.HemisphereLight(0xffffff,0xbbbbff,1);
+scene.add(light);
+
+controller=renderer.xr.getController(0);
+controller.addEventListener('select',onSelect);
+scene.add(controller);
+
+renderer.setAnimationLoop(render);
+
+}
+
+function onSelect(){
+
+const geometry=new THREE.SphereGeometry(0.05,32,32);
+
+const material=new THREE.MeshStandardMaterial({
+color:0xff0000
+});
+
+const sphere=new THREE.Mesh(geometry,material);
+
+sphere.position.set(0,0,-1);
+
+sphere.applyMatrix4(controller.matrixWorld);
+
+scene.add(sphere);
+
+}
+
+function render(){
+
+renderer.render(scene,camera);
+
+}
+
+</script>
+
+</body>
+</html>
