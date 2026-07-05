@@ -48,7 +48,6 @@ button{
 </div>
 
 
-
 <script type="module">
 
 import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
@@ -57,7 +56,7 @@ import { ARButton } from "https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARB
 let camera, scene, renderer;
 let controller;
 let points = [];
-let rotatingMarkers = []; // Array to hold markers that need to spin
+let rotatingMarkers = []; 
 
 init();
 
@@ -116,36 +115,27 @@ function onSelect(){
 
     points.push(p);
 
-    // Create a group to handle the spinning and camera orientation
     const markerGroup = new THREE.Group();
     markerGroup.position.copy(p);
 
-    // Green color for the divided circle
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
 
-    // Divide the circle into 5 parts (5 segments)
     const segments = 5;
-    // Modificado: Radio 10 veces más pequeño (0.03 / 10 = 0.003)
     const radius = 0.003; 
-    // Modificado: Grosor del tubo 10 veces más pequeño (0.003 / 10 = 0.0003)
     const tubeRadius = 0.0003; 
 
     for (let i = 0; i < segments; i++) {
-        // Start and end angle for each slice
         const thetaStart = (i * 2 * Math.PI) / segments;
-        const thetaLength = (1.5 * Math.PI) / segments; // Slightly shorter to create a gap/division
+        const thetaLength = (1.5 * Math.PI) / segments; 
 
         const geometry = new THREE.TorusGeometry(radius, tubeRadius, 8, 24, thetaLength);
         const mesh = new THREE.Mesh(geometry, material);
 
-        // Rotate the segment so it forms a full circle
         mesh.rotation.z = thetaStart;
         markerGroup.add(mesh);
     }
 
     scene.add(markerGroup);
-
-    // Save to our array so we can spin it in the render loop
     rotatingMarkers.push(markerGroup);
 
     if(points.length == 2){
@@ -164,7 +154,27 @@ function onSelect(){
 
         scene.add(line);
 
-        // ===== Texto con la distancia en centímetros =====
+        // ===== NUEVO: Bucle para crear marcas de 1 cm en 1 cm =====
+        const totalCm = Math.floor(d * 100); // Total de centímetros enteros
+        const dotGeometry = new THREE.SphereGeometry(0.001, 8, 8); // Esferas diminutas (1mm de radio)
+        const dotMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+        for (let i = 1; i <= totalCm; i++) {
+            // Calculamos el porcentaje de avance en la línea (1 cm = 0.01 metros)
+            const alpha = (i * 0.01) / d; 
+            
+            if (alpha <= 1.0) {
+                const cmPosition = new THREE.Vector3();
+                // Interpola entre el punto A y el punto B
+                cmPosition.lerpVectors(points[0], points[1], alpha); 
+
+                const cmDot = new THREE.Mesh(dotGeometry, dotMaterial);
+                cmDot.position.copy(cmPosition);
+                scene.add(cmDot);
+            }
+        }
+        // ==========================================================
+
         const cm = Math.round(d * 100);
 
         const canvas = document.createElement("canvas");
@@ -191,7 +201,6 @@ function onSelect(){
 
         sprite.scale.set(0.15, 0.04, 1);
 
-        // Colocar el texto en el punto medio de la línea
         const midpoint = new THREE.Vector3()
             .addVectors(points[0], points[1])
             .multiplyScalar(0.5);
@@ -219,15 +228,11 @@ function render(){
         }
     });
 
-    // CORRECCIÓN: Si ya se marcó el 1er punto, calculamos la distancia dinámica al puntero del usuario
     if (points.length === 1 && controller) {
         const currentPos = new THREE.Vector3();
-        // Obtenemos la posición desde la matriz del controlador
         currentPos.setFromMatrixPosition(controller.matrixWorld); 
-        
-        const dynamicDistance = points[0].distanceTo(currentPos);
 
-        // Suma en tiempo real expresada en enteros de cm
+        const dynamicDistance = points[0].distanceTo(currentPos);
         const dynamicCm = Math.round(dynamicDistance * 100);
         document.getElementById("distance").innerHTML = "Distance: " + dynamicCm + " cm";
     }
@@ -236,6 +241,7 @@ function render(){
 }
 
 </script>
+
 
 
 
