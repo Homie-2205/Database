@@ -1,187 +1,174 @@
 
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Detección de Contornos</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contorno de Objeto en Tiempo Real</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #111;
+            font-family: Arial, sans-serif;
+        }
+        #contenedor {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        video, canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+        }
+        canvas {
+            pointer-events: none;
+        }
+        #cargando {
+            position: absolute;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 15px 25px;
+            border-radius: 20px;
+            z-index: 10;
+        }
+    </style>
 
-<style>
-html,body{
-    margin:0;
-    overflow:hidden;
-    background:#000;
-    font-family:Arial;
-}
-
-video,canvas{
-    position:fixed;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    top:0;
-    left:0;
-}
-
-#info{
-    position:fixed;
-    top:15px;
-    left:15px;
-    background:rgba(0,0,0,.6);
-    color:white;
-    padding:12px;
-    border-radius:10px;
-    z-index:10;
-}
-</style>
-
-<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
-
+    <!-- Importar MediaPipe Tasks Vision -->
+    <script src="https://jsdelivr.net" crossorigin="anonymous"></script>
 </head>
-
 <body>
 
-<div id="info">
-Esperando cámara...
-</div>
+    <div id="cargando">Cargando modelo de IA...</div>
 
-<video id="video" autoplay playsinline muted></video>
-<canvas id="canvas"></canvas>
+    <div id="contenedor">
+        <video id="camara" autoplay playsinline></video>
+        <canvas id="lienzo"></canvas>
+    </div>
 
-<script>
+<script type="module">
+    import { ImageSegmenter, FilesetResolver } from "https://jsdelivr.net";
 
-const video=document.getElementById("video");
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-const info=document.getElementById("info");
+    const video = document.getElementById("camara");
+    const canvas = document.getElementById("lienzo");
+    const ctx = canvas.getContext("2d");
+    const cargandoTxt = document.getElementById("cargando");
 
-let quietTime=0;
-let lastMove=Date.now();
-let detected=false;
+    let imageSegmenter;
+    let width = 640;
+    let height = 480;
 
-navigator.mediaDevices.getUserMedia({
-video:{
-facingMode:"environment"
-}
-})
-.then(stream=>{
-video.srcObject=stream;
-video.play();
-requestAnimationFrame(loop);
-});
+    // 1. Inicializar el Segmentador de MediaPipe
+    async function inicializarIA() {
+        const vision = await FilesetResolver.forVisionTasks(
+            "https://jsdelivr.net"
+        );
+        
+        imageSegmenter = await ImageSegmenter.createFromOptions(vision, {
+            baseOptions: {
+                modelAssetPath: "https://googleapis.com",
+                delegate: "GPU"
+            },
+            runningMode: "VIDEO",
+            outputCategoryMask: true,
+            outputConfidenceMasks: false
+        });
 
-window.addEventListener("devicemotion",e=>{
+        cargandoTxt.style.display = "none";
+        activarCamara();
+    }
 
-let a=e.accelerationIncludingGravity;
+    // 2. Encender la cámara web
+    async function activarCamara() {
+        const constraints = { video: { width: width, height: height } };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        video.addEventListener("loadeddata", ajustarLienzo y Procesar);
+    }
 
-if(!a)return;
+    function ajustarLienzo() {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        width = video.videoWidth;
+        height = video.videoHeight;
+        procesarFotograma();
+    }
 
-let movimiento=Math.abs(a.x)+Math.abs(a.y)+Math.abs(a.z);
+    // 3. Procesar el video frame por frame
+    function procesarFotograma() {
+        if (video.paused || video.ended) return;
 
-if(movimiento>20){
+        let startTimeMs = performance.now();
+        
+        // Ejecutar la segmentación en el fotograma actual
+        imageSegmenter.segmentForVideo(video, startTimeMs, (result) => {
+            dibujarContornoVerde(result.categoryMask);
+        });
 
-lastMove=Date.now();
-detected=false;
+        // Solicitar el siguiente fotograma de forma nativa e infinita
+        window.requestAnimationFrame(procesarFotograma);
+    }
 
-}
+    // 4. Algoritmo matemático para pintar SÓLO el borde
+    function dibujarContornoVerde(mask) {
+        ctx.clearRect(0, 0, width, height);
 
-});
+        // Crear una imagen vacía en el canvas para manipular píxeles directamente
+        const imgData = ctx.createImageData(width, height);
+        const data = imgData.data; // Array de píxeles [R, G, B, A, R, G, B, A...]
+        const maskData = mask.getAsUint8Array(); // Píxeles detectados por la IA (0 = fondo, 1 = objeto)
 
-function loop(){
+        // Grosor del contorno (en píxeles)
+        const grosorBorde = 2; 
 
-if(video.videoWidth){
+        for (let y = grosorBorde; y < height - grosorBorde; y++) {
+            for (let x = grosorBorde; x < width - grosorBorde; x++) {
+                
+                const idx = y * width + x;
+                
+                // Si el píxel actual pertenece al objeto (valor > 0)
+                if (maskData[idx] > 0) {
+                    let esBorde = false;
 
-canvas.width=video.videoWidth;
-canvas.height=video.videoHeight;
+                    // Revisar los píxeles vecinos (arriba, abajo, izquierda, derecha)
+                    // Si algún vecino es fondo (0), este píxel es parte del contorno exterior
+                    for (let dy = -grosorBorde; dy <= grosorBorde; dy++) {
+                        for (let dx = -grosorBorde; dx <= grosorBorde; dx++) {
+                            const vecinoIdx = (y + dy) * width + (x + dx);
+                            if (maskData[vecinoIdx] === 0) {
+                                esBorde = true;
+                                break;
+                            }
+                        }
+                        if (esBorde) break;
+                    }
 
-ctx.drawImage(video,0,0);
+                    // Si se confirmó que es borde, lo pintamos de verde transparente
+                    if (esBorde) {
+                        const pixelInicio = idx * 4;
+                        data[pixelInicio] = 0;       // Rojo (R)
+                        data[pixelInicio + 1] = 255; // Verde (G)
+                        data[pixelInicio + 2] = 0;   // Azul (B)
+                        data[pixelInicio + 3] = 160; // Transparencia (Alpha: 0 es invisible, 255 es sólido)
+                    }
+                }
+            }
+        }
 
-quietTime=(Date.now()-lastMove)/1000;
+        // Renderizar los píxeles calculados en el lienzo
+        ctx.putImageData(imgData, 0, 0);
+    }
 
-if(quietTime<5){
-
-info.innerHTML="Mantén el teléfono quieto<br>"+(5-quietTime).toFixed(1)+" segundos";
-
-}else{
-
-if(!detected && window.cv){
-
-detected=true;
-detectar();
-
-}
-
-}
-
-}
-
-requestAnimationFrame(loop);
-
-}
-
-function detectar(){
-
-let src=cv.imread(canvas);
-
-let gray=new cv.Mat();
-let blur=new cv.Mat();
-let edges=new cv.Mat();
-let contours=new cv.MatVector();
-let hierarchy=new cv.Mat();
-
-cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
-
-cv.GaussianBlur(gray,blur,new cv.Size(5,5),0);
-
-cv.Canny(blur,edges,60,150);
-
-cv.findContours(
-edges,
-contours,
-hierarchy,
-cv.RETR_EXTERNAL,
-cv.CHAIN_APPROX_SIMPLE
-);
-
-ctx.drawImage(video,0,0);
-
-ctx.lineWidth=3;
-ctx.strokeStyle="lime";
-
-for(let i=0;i<contours.size();i++){
-
-let cnt=contours.get(i);
-
-if(cv.contourArea(cnt)>300){
-
-let rect=cv.boundingRect(cnt);
-
-ctx.strokeRect(
-rect.x,
-rect.y,
-rect.width,
-rect.height
-);
-
-}
-
-cnt.delete();
-
-}
-
-src.delete();
-gray.delete();
-blur.delete();
-edges.delete();
-contours.delete();
-hierarchy.delete();
-
-info.innerHTML="Contornos detectados";
-
-}
-
+    // Iniciar la aplicación al cargar la página
+    window.onload = inicializarIA;
 </script>
-
 </body>
 </html>
