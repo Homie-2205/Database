@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>High-Precision Telemetry Dashboard</title>
+  <style>
+    /* Base Reset and Modern Dark UI */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #0b0f19;
+      color: #f1f5f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .telemetry-card {
+      background-color: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 500px;
+      padding: 30px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      border-bottom: 1px solid #1f2937;
+      padding-bottom: 15px;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Live pulse animation to show it's continuously tracking */
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Data Display Elements */
+    .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .full-width {
+      grid-column: span 2;
+    }
+
+    .metric-box {
+      background-color: #1f2937;
+      border-radius: 10px;
+      padding: 15px;
+      border: 1px solid #374151;
+    }
+
+    .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #9ca3af;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .value {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #f3f4f6;
+    }
+
+    .highlight {
+      color: #38bdf8;
+    }
+
+    /* System Status Alerts */
+    .status-banner {
+      background-color: #374151;
+      color: #e5e7eb;
+      font-size: 0.85rem;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      margin-top: 15px;
+      display: block;
+    }
+
+    .status-banner.error {
+      background-color: #7f1d1d;
+      color: #fca5a5;
+      border: 1px solid #991b1b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="telemetry-card">
+    <div class="header">
+      <h2>Precise GPS Telemetry</h2>
+      <div id="status-pulse" class="pulse-dot" style="background-color: #6b7280;"></div>
+    </div>
+    
+    <div class="grid-container">
+      <!-- Main Coordinates -->
+      <div class="metric-box">
+        <span class="label">Latitude</span>
+        <div id="lat" class="value highlight">---</div>
+      </div>
+      
+      <div class="metric-box">
+        <span class="label">Longitude</span>
+        <div id="lng" class="value highlight">---</div>
+      </div>
+
+      <!-- Precision Metadata -->
+      <div class="metric-box">
+        <span class="label">Accuracy Radius</span>
+        <div id="accuracy" class="value">---</div>
+      </div>
+      
+      <div class="metric-box">
+        <span class="label">Altitude</span>
+        <div id="altitude" class="value">---</div>
+      </div>
+
+      <!-- Time Stamps -->
+      <div class="metric-box full-width">
+        <span class="label">Device Current Time</span>
+        <div id="clock" class="value" style="color: #10b981;">00:00:00 AM</div>
+      </div>
+
+      <div class="metric-box full-width">
+        <span class="label">Last GPS Fix Timestamp</span>
+        <div id="gps-time" class="value">Awaiting first fix...</div>
+      </div>
+    </div>
+
+    <div id="status-text" class="status-banner">System initializing. Please accept the browser prompt...</div>
+  </div>
+
+  <script>
+    // 1. Standalone System Clock Engine
+    function startSystemClock() {
+      const clockEl = document.getElementById('clock');
+      setInterval(() => {
+        clockEl.textContent = new Date().toLocaleTimeString();
+      }, 1000);
+    }
+
+    // 2. High-Precision Tracking Engine
+    function startTracking() {
+      const pulse = document.getElementById('status-pulse');
+      const statusText = document.getElementById('status-text');
+      
+      if (!navigator.geolocation) {
+        statusText.textContent = "Hardware/Browser incompatible with Geolocation API.";
+        statusText.className = "status-banner error";
+        return;
+      }
+
+      // High precision system flags configuration
+      const gpsOptions = {
+        enableHighAccuracy: true, // Forces device to lock onto GPS satellites instead of cell towers
+        timeout: 15000,           // Throw error if hardware takes longer than 15s to respond
+        maximumAge: 0             // Never serve cached positions; force instant hardware queries
+      };
+
+      navigator.geolocation.watchPosition(
+        (position) => {
+          // Hardware tracking successful
+          pulse.style.backgroundColor = "#10b981"; // Green light
+          statusText.textContent = "Tracking active. Accurate hardware connection established.";
+          statusText.className = "status-banner";
+
+          // Injecting highly accurate decimal coordinates (up to 8 decimal places)
+          document.getElementById('lat').textContent = position.coords.latitude.toFixed(8) + "°";
+          document.getElementById('lng').textContent = position.coords.longitude.toFixed(8) + "°";
+          
+          // Injecting margin of error / accuracy metric
+          document.getElementById('accuracy').textContent = `± ${position.coords.accuracy.toFixed(1)} meters`;
+          
+          // Altitude handling (some devices do not have an altimeter)
+          if (position.coords.altitude !== null) {
+            document.getElementById('altitude').textContent = `${position.coords.altitude.toFixed(1)} m`;
+          } else {
+            document.getElementById('altitude').textContent = "Not Available";
+          }
+
+          // Format exact millisecond timestamp given by GPS hardware
+          const fixTime = new Date(position.timestamp);
+          document.getElementById('gps-time').textContent = fixTime.toLocaleTimeString() + `.${String(fixTime.getMilliseconds()).padStart(3, '0')}`;
+        },
+        (error) => {
+          // Hardware tracking failures
+          pulse.style.backgroundColor = "#ef4444"; // Red light
+          statusText.className = "status-banner error";
+
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              statusText.textContent = "Denied: Location access blocked. Enable permissions in your browser URL bar.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              statusText.textContent = "Signal Lost: Satellite/Network data grid unavailable.";
+              break;
+            case error.TIMEOUT:
+              statusText.textContent = "Timeout: Hardware took too long looking for a baseline location fix.";
+              break;
+          }
+        },
+        gpsOptions
+      );
+    }
+
+    // Fire engines on load
+    startSystemClock();
+    startTracking();
+  </script>
+
+</body>
+</html>
+
