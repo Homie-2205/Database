@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPS Location</title>
+
+<style>
+body{
+    margin:0;
+    background:#101820;
+    color:white;
+    font-family:Arial,sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.card{
+    width:360px;
+    max-width:90%;
+    background:#1b263b;
+    padding:25px;
+    border-radius:15px;
+    box-shadow:0 0 20px rgba(0,0,0,.4);
+}
+
+h2{
+    text-align:center;
+    margin-top:0;
+    color:#00d4ff;
+}
+
+.item{
+    margin:12px 0;
+    font-size:17px;
+}
+
+.label{
+    color:#00d4ff;
+    font-weight:bold;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:8px;
+    background:#00b894;
+    color:white;
+    font-size:18px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#009b77;
+}
+</style>
+
+</head>
+<body>
+
+<div class="card">
+
+<h2>GPS Location</h2>
+
+<div class="item">
+<span class="label">Latitude:</span>
+<div id="lat">--</div>
+</div>
+
+<div class="item">
+<span class="label">Longitude:</span>
+<div id="lon">--</div>
+</div>
+
+<div class="item">
+<span class="label">Accuracy:</span>
+<div id="acc">--</div>
+</div>
+
+<div class="item">
+<span class="label">Local Time:</span>
+<div id="localTime"></div>
+</div>
+
+<div class="item">
+<span class="label">UTC Time:</span>
+<div id="utcTime"></div>
+</div>
+
+<div class="item">
+<span class="label">Last GPS Update:</span>
+<div id="gpsTime">Waiting...</div>
+</div>
+
+<br>
+
+<button onclick="startGPS()">Get GPS Location</button>
+
+</div>
+
+<script>
+
+function updateClock(){
+
+    const now=new Date();
+
+    document.getElementById("localTime").innerHTML=
+    now.toLocaleString();
+
+    document.getElementById("utcTime").innerHTML=
+    now.toUTCString();
+
+}
+
+setInterval(update
