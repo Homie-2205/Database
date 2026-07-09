@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geolocation Coordinator</title>
+    <style>
+        :root {
+            /* Fixed the missing variable causing the button to be invisible */
+            --bg-gradient: linear-gradient(135deg, #0072ff 0%, #00f2fe 100%);
+        }
+      
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            /* Balanced the radial dark theme background */
+            background: radial-gradient(circle at center, #2c3e50 0%, #0f2027 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 40px 30px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            max-width: 400px;
+            width: 85%;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 28px;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #ffffff 60%, #a5c7f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 15px;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: var(--bg-gradient);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 242, 254, 0.5);
+            opacity: 0.95;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        #result {
+            margin-top: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #00f2fe;
+            min-height: 30px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Wrapped elements inside the container so your CSS styles apply correctly -->
+    <div class="container">
+        <h2>GPS Santa Elena</h2>
+        <p>Click the button below to display your current latitude and longitude coordinates.</p>
+        <button onclick="getLocation()">Get Coordinates</button>
+        <div id="result"></div>
+    </div>
+
+    <!-- Added working JavaScript to make the page functional -->
+    <script>
+        function getLocation() {
+            const resultDiv = document.getElementById("result");
+            if (navigator.geolocation) {
+                resultDiv.innerHTML = "Locating...";
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude.toFixed(5);
+                        const lon = position.coords.longitude.toFixed(5);
+                        resultDiv.innerHTML = `Lat: ${lat} <br> Lon: ${lon}`;
+                    },
+                    (error) => {
+                        resultDiv.innerHTML = "Error retrieving location.";
+                    }
+                );
+            } else {
+                resultDiv.innerHTML = "Geolocation not supported.";
+            }
+        }
+    </script>
+
+</body>
+</html>
