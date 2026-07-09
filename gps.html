@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPS Coordinates Locator</title>
+    <title>Geolocation Coordinator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 50px;
             text-align: center;
+            padding: 50px;
         }
         button {
             padding: 12px 24px;
@@ -22,7 +22,7 @@
         button:hover {
             background-color: #0056b3;
         }
-        #output {
+        #result {
             margin-top: 20px;
             font-size: 18px;
             font-weight: bold;
@@ -31,55 +31,56 @@
 </head>
 <body>
 
-    <h2>Find Your GPS Coordinates</h2>
-    <!-- Best practice: Request permission via a clear user gesture like a button click -->
-    <button onclick="getLocation()">Get GPS Location</button>
-    <div id="output">Click the button to request coordinates.</div>
+    <h2>Find My Coordinates</h2>
+    <p>Click the button below to display your current latitude and longitude.</p>
+    
+    <button onclick="getLocation()">Get Coordinates</button>
+    
+    <div id="result"></div>
 
     <script>
-        const outputDiv = document.getElementById("output");
+        const resultDiv = document.getElementById("result");
 
         function getLocation() {
-            // 1. Check if the browser supports the Geolocation API
-            if ("geolocation" in navigator) {
-                outputDiv.innerHTML = "Requesting permission...";
-                
-                // Optional high accuracy configurations to force GPS hardware over IP mapping
-                const options = {
-                    enableHighAccuracy: true, 
-                    timeout: 5000,           
-                    maximumAge: 0            
-                };
-
-                // 2. This call triggers the browser's permission prompt automatically
-                navigator.geolocation.getCurrentPosition(successCallback, errorCallback, options);
-            } else {
-                outputDiv.innerHTML = "Geolocation is not supported by your browser.";
+            // Check if the browser supports the Geolocation API
+            if (!navigator.geolocation) {
+                resultDiv.innerHTML = "Geolocation is not supported by your browser.";
+                return;
             }
+
+            resultDiv.innerHTML = "Locating...";
+
+            // Configuration options for high accuracy (important for mobile/Android devices)
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            };
+
+            // Request the current position
+            navigator.geolocation.getCurrentPosition(showPosition, showError, options);
         }
 
-        // 3. Callback runs if user accepts permission and coordinates are found
-        function successCallback(position) {
+        function showPosition(position) {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
             
-            outputDiv.innerHTML = `Latitude: ${latitude} <br> Longitude: ${longitude}`;
+            resultDiv.innerHTML = `Latitude: ${latitude} <br> Longitude: ${longitude}`;
         }
 
-        // 4. Callback runs if user denies permission or an error occurs
-        function errorCallback(error) {
+        function showError(error) {
             switch(error.code) {
                 case error.PERMISSION_DENIED:
-                    outputDiv.innerHTML = "User denied the request for Geolocation.";
+                    resultDiv.innerHTML = "User denied the request for Geolocation.";
                     break;
                 case error.POSITION_UNAVAILABLE:
-                    outputDiv.innerHTML = "Location information is unavailable.";
+                    resultDiv.innerHTML = "Location information is unavailable.";
                     break;
                 case error.TIMEOUT:
-                    outputDiv.innerHTML = "The request to get user location timed out.";
+                    resultDiv.innerHTML = "The request to get user location timed out.";
                     break;
                 case error.UNKNOWN_ERROR:
-                    outputDiv.innerHTML = "An unknown error occurred.";
+                    resultDiv.innerHTML = "An unknown error occurred.";
                     break;
             }
         }
