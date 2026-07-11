@@ -1,0 +1,36 @@
+
+
+
+
+
+
+
+Function getLocation() {
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            console.log("Latitude:", latitude);
+            console.log("Longitude:", longitude);
+            console.log("Accuracy:", accuracy + " m");
+        },
+        function(error) {
+            console.error(error);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        }
+    );
+}
+
+// Get the first location immediately
+getLocation();
+
+// Then get a new location every 30 seconds
+setInterval(getLocation, 30000);
+
+
