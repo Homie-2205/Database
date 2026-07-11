@@ -1,11 +1,200 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPS Santa Elena</title>
 
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
+body{
+    font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;
+    background:radial-gradient(circle,#232526,#414345);
+    color:#fff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    padding:20px;
+}
 
+.container{
+    width:100%;
+    max-width:500px;
+    background:rgba(255,255,255,.12);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.2);
+    border-radius:20px;
+    padding:30px;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+}
 
+h2{
+    margin-bottom:15px;
+    font-size:30px;
+}
 
+p{
+    margin-bottom:20px;
+    color:#ddd;
+}
 
-Function getLocation() {
+button{
+    background:#007BFF;
+    color:#fff;
+    border:none;
+    padding:15px 35px;
+    border-radius:50px;
+    font-size:18px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.3s;
+}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+.nav-button{
+    display:inline-block;
+    margin-top:20px;
+    color:white;
+    text-decoration:none;
+    font-weight:bold;
+}
+
+#clock{
+    margin-top:25px;
+    padding:15px;
+    border-radius:12px;
+    background:rgba(255,255,255,.08);
+    font-size:18px;
+    line-height:1.7;
+}
+
+#result{
+    margin-top:20px;
+    padding:15px;
+    border-radius:12px;
+    background:rgba(255,255,255,.08);
+    text-align:left;
+    line-height:1.8;
+    word-wrap:break-word;
+}
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h2>GPS Santa Elena</h2>
+
+<p>Press the button below to obtain your current GPS coordinates.</p>
+
+<button onclick="getLocation()">Get Location</button>
+
+<br>
+
+<a href="index.html" class="nav-button">Herramientas Digitales</a>
+
+<div id="clock"></div>
+
+<div id="result"></div>
+
+</div>
+
+<script>
+
+const resultDiv = document.getElementById("result");
+
+function updateClock(){
+
+    const now = new Date();
+
+    document.getElementById("clock").innerHTML =
+    "<strong>Date:</strong> " + now.toLocaleDateString() +
+    "<br>" +
+    "<strong>Time:</strong> " + now.toLocaleTimeString();
+
+}
+
+setInterval(updateClock,1000);
+updateClock();
+
+function getLocation(){
+
+    if(!navigator.geolocation){
+        resultDiv.innerHTML="Geolocation is not supported by this browser.";
+        return;
+    }
+
+    resultDiv.innerHTML="Obtaining GPS location...";
+
+    navigator.geolocation.getCurrentPosition(
+        showPosition,
+        showError,
+        {
+            enableHighAccuracy:true,
+            timeout:10000,
+            maximumAge:0
+        }
+    );
+}
+
+function showPosition(position){
+
+    const latitude = position.coords.latitude.toFixed(8);
+    const longitude = position.coords.longitude.toFixed(8);
+    const accuracy = position.coords.accuracy.toFixed(2);
+
+    const gpsTime = new Date(position.timestamp);
+
+    resultDiv.innerHTML =
+
+    "<strong>Latitude:</strong> " + latitude + "<br>" +
+    "<strong>Longitude:</strong> " + longitude + "<br>" +
+    "<strong>Accuracy:</strong> " + accuracy + " meters<br>" +
+    "<strong>GPS Time:</strong> " + gpsTime.toLocaleString() + "<br>" +
+    "<strong>Altitude:</strong> " +
+    (position.coords.altitude !== null ? position.coords.altitude.toFixed(2) + " m" : "Not available") +
+    "<br>" +
+    "<strong>Speed:</strong> " +
+    (position.coords.speed !== null ? position.coords.speed.toFixed(2) + " m/s" : "Not available");
+
+}
+
+function showError(error){
+
+    switch(error.code){
+
+        case error.PERMISSION_DENIED:
+            resultDiv.innerHTML="❌ Permission denied.";
+            break;
+
+        case error.POSITION_UNAVAILABLE:
+            resultDiv.innerHTML="❌ Location unavailable.";
+            break;
+
+        case error.TIMEOUT:
+            resultDiv.innerHTML="❌ GPS request timed out.";
+            break;
+
+        default:
+            resultDiv.innerHTML="❌ Unknown GPS error.";
+    }
+
+}
+
+function getLocation() {
     navigator.geolocation.getCurrentPosition(
         function(position) {
             const latitude = position.coords.latitude;
@@ -33,4 +222,13 @@ getLocation();
 // Then get a new location every 30 seconds
 setInterval(getLocation, 30000);
 
+</script>
 
+</body>
+</html>
+
+
+
+
+
+            
