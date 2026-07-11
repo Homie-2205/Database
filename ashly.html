@@ -51,6 +51,25 @@ Blue or Hello
 </div>
 
 <script>
+// Check if the page is locked
+const unlockTime = localStorage.getItem("unlockTime");
+
+if (unlockTime && Date.now() < Number(unlockTime)) {
+    document.body.innerHTML = `
+        <h2>This page is temporarily unavailable.</h2>
+        <p>Please try again later.</p>
+    `;
+    throw new Error("Page locked");
+}
+
+// When the page is closed or refreshed, lock it for 1 hour
+window.addEventListener("beforeunload", function () {
+    const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+    localStorage.setItem("unlockTime", Date.now() + oneHour);
+});
+</script>
+
+<script>
 
 const SpeechRecognition =
 window.SpeechRecognition ||
