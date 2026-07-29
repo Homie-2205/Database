@@ -229,5 +229,20 @@ function render(){
 
 </script>
 
+<script>
+// Bloquear la página después de 1 hora
+setTimeout(() => {
+    document.body.innerHTML = `
+        <div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:Arial;text-align:center;">
+            <div>
+                <h1>Sesión expirada</h1>
+                <p>Esta página ha sido bloqueada por haber transcurrido 1 hora.</p>
+                <button onclick="location.reload()">Recargar</button>
+            </div>
+        </div>
+    `;
+}, 60 * 60 * 1000); // 1 hora
+
+</script>
 </body>
 </html>
