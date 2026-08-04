@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control ESP32</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    text-align:center;
+    background:#f0f0f0;
+    margin-top:60px;
+}
+button{
+    width:180px;
+    height:60px;
+    font-size:22px;
+    margin:10px;
+    cursor:pointer;
+}
+</style>
+
+</head>
+<body>
+
+<h2>Control del LED del ESP32</h2>
+
+<button onclick="encender()">Encender</button>
+<button onclick="apagar()">Apagar</button>
+
+<script>
+
+const ip = "192.168.4.1"; // Cambia por la IP de tu ESP32
+
+function encender(){
+    fetch(`http://${ip}/led/on`)
+    .then(r=>console.log("LED Encendido"))
+    .catch(e=>alert("No se pudo conectar al ESP32"));
+}
+
+function apagar(){
+    fetch(`http://${ip}/led/off`)
+    .then(r=>console.log("LED Apagado"))
+    .catch(e=>alert("No se pudo conectar al ESP32"));
+}
+
+</script>
+
+</body>
+</html>
