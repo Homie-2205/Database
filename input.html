@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheet Row Lookup</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 40px;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus {
+            border-color: #3498db;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .status {
+            font-style: italic;
+            color: #95a5a6;
+            margin-bottom: 15px;
+        }
+        .result-card {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #ebf5fb;
+            border-left: 5px solid #3498db;
+            border-radius: 4px;
+            display: none;
+        }
+        .result-card h3 {
+            margin: 0 0 10px 0;
+            color: #2980b9;
+        }
+        .greeting-text {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Data Lookup Portal</h1>
+    <div class="subtitle">Enter an Identification ID to extract user row records</div>
+    
+    <div class="status" id="statusMessage">Loading spreadsheet database...</div>
+
+    <div class="search-box">
+        <input type="text" id="idInput" placeholder="Enter Identification ID..." disabled>
+        <button id="searchBtn" disabled>Search</button>
+    </div>
+
+    <div class="result-card" id="resultCard">
+        <h3>Result Found:</h3>
+        <div class="greeting-text" id="greetingOutput"></div>
+    </div>
+</div>
+
+<script>
+    // Live link provided
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/1gooHyk3zbH-G_5RXgT9MTMQfgpW-LqIL05ZQjn6_Qrg/export?format=csv";
+    
+    let sheetData = []; // Global store for rows
+
+    // UI Elements
+    const statusMessage = document.getElementById('statusMessage');
+    const idInput = document.getElementById('idInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const resultCard = document.getElementById('resultCard');
+    const greetingOutput = document.getElementById('greetingOutput');
+
+    // Fetch data immediately when the page loads
+    window.addEventListener('DOMContentLoaded', loadDatabase);
+    searchBtn.addEventListener('click', performSearch);
+    
+    // Allow pressing "Enter" key to search
+    idInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') performSearch();
+    });
+
+    async function loadDatabase() {
+        try {
+            const response = await fetch(CSV_URL);
+            if (!response.ok) throw new Error("Could not reach Google Sheets.");
+            
+            const csvText = await response.text();
+            
+            // Parse text lines cleanly into row arrays
+            const lines = csvText.split('\n');
+            sheetData = lines.map(line => parseCSVRow(line));
+
+            // Activation
+            statusMessage.style.color = "#2ecc71";
+            statusMessage.innerText = "Database ready for search!";
+            idInput.disabled = false;
+            searchBtn.disabled = false;
+            idInput.focus();
+
+        } catch (error) {
+            statusMessage.style.color = "#e74c3c";
+            statusMessage.innerText = "Connection Error: Failed to fetch spreadsheet data. Ensure your server environment matches CORS permissions.";
+            console.error(error);
+        }
+    }
+
+    function performSearch() {
+        const searchId = idInput.value.trim();
+        resultCard.style.display = "none";
+
+        if (!searchId) {
+            alert("Please input an Identification string.");
+            return;
+        }
+
+        // Loop through data (skipping index 0 if it contains headers)
+        let matchFound = false;
+        
+        for (let i = 1; i < sheetData.length; i++) {
+            const columns = sheetData[i];
+            
+            // Verify data exists across the row arrays 
+            if (columns.length < 3) continue;
+
+            const idInSheet = columns[1] ? columns[1].trim() : "";   // Column B (Index 1)
+            const nameInSheet = columns[2] ? columns[2].trim() : ""; // Column C (Index 2)
+
+            // Dynamic comparison matches ID column criteria
+            if (idInSheet.toLowerCase() === searchId.toLowerCase()) {
+                matchFound = true;
+                
+                // Pick a greeting word randomly: Hi, Hello, or Welcome
+                const greetingWords = ["Hi", "Hello", "Welcome"];
+                const randomGreeting = greetingWords[Math.floor(Math.random() * greetingWords.length)];
+
+                // Format string output: "[Greeting] [ID] [Name]"
+                greetingOutput.innerText = `${randomGreeting} ${idInSheet} ${nameInSheet}`;
+                resultCard.style.display = "block";
+                break;
+            }
+        }
+
+        if (!matchFound) {
+            alert(`No row match found for ID: ${searchId}`);
+        }
+    }
+
+    // Safe helper function to parse strings with internal quotes or formatting commas
+    function parseCSVRow(text) {
+        let p = '', c = text.split(','), r = [];
+        for (let i = 0; i < c.length; i++) {
+            if (c[i].lastIndexOf('"') <= 0 && c[i].indexOf('"') === 0) {
+                p = c[i];
+                while (c[++i].lastIndexOf('"') < 0) { p += ',' + c[i]; }
+                r.push(p + ',' + c[i]);
+            } else {
+                r.push(c[i]);
+            }
+        }
+        return r;
+    }
+</script>
+
+</body>
+</html>
